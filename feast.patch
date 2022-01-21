@@ -1,0 +1,212 @@
+diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
+index 9655c5d1..bc02c9c2 100644
+--- a/sdk/python/feast/feature_store.py
++++ b/sdk/python/feast/feature_store.py
+@@ -511,6 +511,38 @@ class FeatureStore:
+                 table, project=self.project, commit=False
+             )
+ 
++        add_odfvs = [o.name for o in odfvs_to_update]
++        add_feature_tables = [ft.name for ft in tables_to_update]
++
++        add_entities = [{
++            'name': ent.name,
++            'data_type': ent.value_type.name
++            }
++            for ent in entities_to_update]
++
++        add_feature_views = [{
++            'name': fv.name,
++            'entities': fv.entities
++        }
++        for fv in views_to_update]
++
++        add_feature_services = [{
++            'name': fs.name,
++            'features': fs.features
++        }
++        for fs in services_to_update]
++
++        infra_update = {
++            "project": self.project,
++            "to_add": {
++                "entities": add_entities,
++                "feature_views": add_feature_views,
++                "odfvs": add_odfvs,
++                "feature_services": add_feature_services,
++                "feature_tables": add_feature_tables
++            }
++        }
++
+         if not partial:
+             # Delete all registry objects that should not exist.
+             entities_to_delete = [
+@@ -557,6 +589,39 @@ class FeatureStore:
+                     table.name, project=self.project, commit=False
+                 )
+ 
++        delete_odfvs = [o.name for o in odfvs_to_delete]
++        delete_feature_tables = [ft.name for ft in tables_to_delete]
++
++        delete_entities = [{
++            'name': ent.name,
++            'data_type': ent.value_type.name
++            }
++            for ent in entities_to_delete]
++
++        delete_feature_views = [{
++            'name': fv.name,
++            'entities': fv.entities
++        }
++        for fv in views_to_delete]
++
++        delete_feature_services = [{
++            'name': fs.name,
++            'features': fs.features
++        }
++        for fs in services_to_delete]
++
++        infra_update["to_delete"] = {
++            "entities": delete_entities,
++            "feature_views": delete_feature_views,
++            "odfvs": delete_odfvs,
++            "feature_services": delete_feature_services,
++            "feature_tables": delete_feature_tables
++        }
++
++        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++            self._registry.update_newly_added_attrs(infra_update)
++            self._registry.validate_infra_update(infra_update)
++
+         self._get_provider().update_infra(
+             project=self.project,
+             tables_to_delete=views_to_delete + tables_to_delete if not partial else [],
+@@ -566,7 +631,11 @@ class FeatureStore:
+             partial=partial,
+         )
+ 
+-        self._registry.commit()
++        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++            self._registry.commit(
++                project=self.project, to_add=infra_update['to_add'], to_delete=infra_update['to_delete'])
++        else:
++            self._registry.add_feature_services()
+ 
+     @log_exceptions_and_usage
+     def teardown(self):
+@@ -581,7 +650,7 @@ class FeatureStore:
+         entities = self.list_entities()
+ 
+         self._get_provider().teardown_infra(self.project, tables, entities)
+-        self._registry.teardown()
++        self._registry.teardown(project=self.project)
+ 
+     @log_exceptions_and_usage
+     def get_historical_features(
+diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
+index 8cb646f6..e16980b9 100644
+--- a/sdk/python/feast/registry.py
++++ b/sdk/python/feast/registry.py
+@@ -14,7 +14,7 @@
+ 
+ from datetime import datetime, timedelta
+ from pathlib import Path
+-from typing import Dict, List, Optional
++from typing import Dict, List, Optional, Set, Tuple, Union
+ from urllib.parse import urlparse
+ 
+ from google.protobuf.internal.containers import RepeatedCompositeFieldContainer
+@@ -658,18 +658,31 @@ class Registry:
+ 
+         raise EntityNotFoundException(name, project)
+ 
+-    def commit(self):
++    def commit(self, **kwargs):
+         """Commits the state of the registry cache to the remote registry store."""
+-        if self.cached_registry_proto:
++        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
++            assert 'to_add' in kwargs
++            assert 'to_delete' in kwargs
++            if self.cached_registry_proto:
++                self._registry_store.update_registry_proto(self.cached_registry_proto, **kwargs)
++        elif self.cached_registry_proto:
+             self._registry_store.update_registry_proto(self.cached_registry_proto)
+ 
++    def validate_infra_update(self, update_infra):
++        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
++            self._registry_store.validate_infra_update_with_registry(update_infra)
++
+     def refresh(self):
+         """Refreshes the state of the registry cache by fetching the registry state from the remote registry store."""
+         self._get_registry_proto(allow_cache=False)
+ 
+-    def teardown(self):
++    def teardown(self, **kwargs):
+         """Tears down (removes) the registry."""
+-        self._registry_store.teardown()
++        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
++            assert 'project' in kwargs
++            self._registry_store.teardown(project=kwargs['project'])
++        else:
++            self._registry_store.teardown()
+ 
+     def _prepare_registry_for_changes(self):
+         """Prepares the Registry for changes by refreshing the cache if necessary."""
+@@ -734,3 +747,57 @@ class Registry:
+             fv.spec.name: fv for fv in self.cached_registry_proto.request_feature_views
+         }
+         return {**odfvs, **fvs, **request_fvs}
++
++    def get_existing_project_attrs(self):
++        registry_proto = self._registry_store.get_registry_proto()
++        existing_entities = {
++            ent.spec.name: ent
++            for ent in registry_proto.entities
++        }
++        existing_feature_svcs ={
++            fsvc.spec.name: fsvc
++            for fsvc in registry_proto.feature_services
++        }
++        existing_feature_tables = {
++            ft.spec.name: ft
++            for ft in registry_proto.feature_tables
++        }
++        existing_odfvs = {
++            fv.spec.name: fv
++            for fv in registry_proto.on_demand_feature_views
++        }
++        existing_fvs = {fv.spec.name: fv for fv in registry_proto.feature_views}
++        existing_request_fvs = {
++            fv.spec.name: fv for fv in registry_proto.request_feature_views
++        }
++
++        existing_attrs = {
++            "entities": existing_entities,
++            "feature_services": existing_feature_svcs,
++            "feature_tables": existing_feature_tables,
++            "odfvs": existing_odfvs,
++            "feature_views": existing_fvs,
++            "request_feature_views": existing_request_fvs
++
++        }
++        return existing_attrs
++
++    def update_newly_added_attrs(self, infra_update):
++        existing_attrs = self.get_existing_project_attrs()
++        to_add = infra_update["to_add"]
++        for k, v in to_add.items():
++            if k == "entities":
++                to_add["entities"] = list(filter(
++                    lambda entity: entity["name"] not in existing_attrs["entities"], v))
++            elif k == "feature_views":
++                to_add["feature_views"] = list(filter(
++                    lambda fv: fv["name"] not in existing_attrs["feature_views"], v))
++            elif k == "odfvs":
++                to_add["odfvs"] = list(filter(
++                    lambda odfv: odfv not in existing_attrs["odfvs"], v))
++            elif k == "feature_services":
++                to_add["feature_services"] = list(filter(
++                    lambda fsvc: fsvc["name"] not in existing_attrs["feature_services"], v))
++            elif k == "feature_tables":
++                to_add["feature_tables"] = list(filter(
++                    lambda ft: ft not in existing_attrs["feature_tables"], v))
