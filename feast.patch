@@ -1,7 +1,7 @@
-diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
+diff --git sdk/python/feast/feature_store.py sdk/python/feast/feature_store.py
 index 9655c5d1..bc02c9c2 100644
---- a/sdk/python/feast/feature_store.py
-+++ b/sdk/python/feast/feature_store.py
+--- sdk/python/feast/feature_store.py
++++ sdk/python/feast/feature_store.py
 @@ -511,6 +511,38 @@ class FeatureStore:
                  table, project=self.project, commit=False
              )
@@ -103,10 +103,10 @@ index 9655c5d1..bc02c9c2 100644
  
      @log_exceptions_and_usage
      def get_historical_features(
-diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
+diff --git sdk/python/feast/registry.py sdk/python/feast/registry.py
 index 8cb646f6..e16980b9 100644
---- a/sdk/python/feast/registry.py
-+++ b/sdk/python/feast/registry.py
+--- sdk/python/feast/registry.py
++++ sdk/python/feast/registry.py
 @@ -14,7 +14,7 @@
  
  from datetime import datetime, timedelta
