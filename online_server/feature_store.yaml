@@ -5,7 +5,7 @@ registry:
 provider: custom_provider.proto_custom_provider.ProtoCustomProvider
 online_store:
     type: custom_provider.custom_online_store.CustomOnlineStore
-    host: "10.43.198.52"
+    host: "10.43.103.119"
     port: "3306"
     db: feastdb
     user: root

@@ -20,6 +20,7 @@ class MysqlConfig(metaclass=Base):
                     "user": online_store["user"],
                     "password": online_store["password"],
                     "database": online_store["db"],
+                    # "db": online_store["db"],
                     "autocommit": True,
                 }
 
