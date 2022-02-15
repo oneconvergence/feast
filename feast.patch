@@ -1,7 +1,7 @@
-diff --git sdk/python/feast/feature_store.py sdk/python/feast/feature_store.py
-index 9655c5d1..bc02c9c2 100644
---- sdk/python/feast/feature_store.py
-+++ sdk/python/feast/feature_store.py
+diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
+index 9655c5d1..ea1252af 100644
+--- a/sdk/python/feast/feature_store.py
++++ b/sdk/python/feast/feature_store.py
 @@ -511,6 +511,38 @@ class FeatureStore:
                  table, project=self.project, commit=False
              )
@@ -90,7 +90,7 @@ index 9655c5d1..bc02c9c2 100644
 +            self._registry.commit(
 +                project=self.project, to_add=infra_update['to_add'], to_delete=infra_update['to_delete'])
 +        else:
-+            self._registry.add_feature_services()
++            self._registry.commit()
  
      @log_exceptions_and_usage
      def teardown(self):
@@ -103,10 +103,65 @@ index 9655c5d1..bc02c9c2 100644
  
      @log_exceptions_and_usage
      def get_historical_features(
-diff --git sdk/python/feast/registry.py sdk/python/feast/registry.py
+@@ -753,6 +822,13 @@ class FeatureStore:
+             <BLANKLINE>
+             ...
+         """
++        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++            # Proxy materialize call to online server.
++            self._get_provider().proxy_materialize_incremental(
++                end_date, feature_views
++            )
++            return
++
+         feature_views_to_materialize: List[FeatureView] = []
+         if feature_views is None:
+             feature_views_to_materialize = self._list_feature_views(
+@@ -845,6 +921,13 @@ class FeatureStore:
+                 f"The given start_date {start_date} is greater than the given end_date {end_date}."
+             )
+ 
++        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++            # Proxy materialize call to online server.
++            self._get_provider().proxy_materialize(
++                start_date, end_date, feature_views
++            )
++            return
++
+         feature_views_to_materialize: List[FeatureView] = []
+         if feature_views is None:
+             feature_views_to_materialize = self._list_feature_views(
+diff --git a/sdk/python/feast/infra/passthrough_provider.py b/sdk/python/feast/infra/passthrough_provider.py
+index 34bf4902..1b2f4392 100644
+--- a/sdk/python/feast/infra/passthrough_provider.py
++++ b/sdk/python/feast/infra/passthrough_provider.py
+@@ -180,3 +180,22 @@ class PassthroughProvider(Provider):
+             full_feature_names=full_feature_names,
+         )
+         return job
++
++    def proxy_materialize(
++        self,
++        start_date: datetime,
++        end_date: datetime,
++        feature_views:Optional[List[str]] = None
++    ) -> None:
++        self.online_store.process_materialize(
++            self.repo_config, start_date, end_date, feature_views
++        )
++
++    def proxy_materialize_incremental(
++        self,
++        end_date: datetime,
++        feature_views:Optional[List[str]] = None
++    ) -> None:
++        self.online_store.process_materialize_incremental(
++            self.repo_config, end_date, feature_views
++        )
+diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
 index 8cb646f6..e16980b9 100644
---- sdk/python/feast/registry.py
-+++ sdk/python/feast/registry.py
+--- a/sdk/python/feast/registry.py
++++ b/sdk/python/feast/registry.py
 @@ -14,7 +14,7 @@
  
  from datetime import datetime, timedelta

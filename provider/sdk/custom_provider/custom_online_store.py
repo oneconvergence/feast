@@ -1,20 +1,23 @@
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-import itertools
-import pytz
 from feast import RepoConfig
 from feast.entity import Entity
 from feast.feature_table import FeatureTable
 from feast.feature_view import FeatureView
-from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from feast.repo_config import FeastConfigBaseModel
-from mysql.connector import connect
+# from mysql.connector import connect
 from pydantic import StrictStr
 from pydantic.typing import Literal
+from provider.sdk.custom_provider.online_drivers.local_driver import OnlineLocalDriver
+
+from provider.sdk.custom_provider.online_drivers.remote_driver import OnlineRemoteDriver
+
+
+DRIVER = "remote"
 
 
 class CustomOnlineStoreConfig(FeastConfigBaseModel):
@@ -29,21 +32,16 @@ class CustomOnlineStoreConfig(FeastConfigBaseModel):
 
 
 class CustomOnlineStore(OnlineStore):
-    online_store_config = None
-    connect_args = None
+    driver: Union[OnlineRemoteDriver, OnlineLocalDriver] = None
 
     def initialize(self, config):
-        if self.online_store_config:
-            return
-        self.online_store_config = config.online_store
-        self.connect_args = {
-            "host": self.online_store_config.host,
-            "port": self.online_store_config.port,
-            "user": self.online_store_config.user,
-            "password": self.online_store_config.password,
-            "database": self.online_store_config.db,
-            "autocommit": True,
-        }
+        if self.driver:
+            return self.driver
+        def get_driver(driver="remote"):
+            if driver.lower() == "remote":
+                return OnlineRemoteDriver(config)
+            return OnlineLocalDriver(config)
+        self.driver = get_driver(DRIVER)
 
     def online_write_batch(
         self,
@@ -60,70 +58,52 @@ class CustomOnlineStore(OnlineStore):
         progress: Optional[Callable[[int], Any]],
     ) -> None:
         self.initialize(config)
-        project = config.project
-        for entity_key, values, timestamp, created_ts in data:
-            entity_key_bin = serialize_entity_key(entity_key).hex()
-            timestamp = _to_naive_utc(timestamp)
-            if created_ts:
-                created_ts = _to_naive_utc(created_ts)
+        self.driver.online_write_batch(config, table, data, progress)
 
-            for feature_name, val in values.items():
-                self.insert_into_table(
-                    project,
-                    table,
-                    entity_key_bin,
-                    feature_name,
-                    timestamp,
-                    created_ts,
-                    val,
-                )
-            if progress:
-                progress(1)
-
-    def insert_into_table(
-        self,
-        project,
-        table,
-        entity_key_bin,
-        feature_name,
-        timestamp,
-        created_ts,
-        val,
-    ):
-        with connect(**self.connect_args) as conn:
-            with conn.cursor(buffered=True) as cursor:
-                _update_query = f"""
-                    update {_table_name(project, table)} set value = %s,
-                    event_ts = %s, created_ts = %s
-                    where (entity_key = %s and feature_name = %s)
-                """
-                cursor.execute(
-                    _update_query,
-                    (
-                        val.SerializeToString(),
-                        timestamp,
-                        created_ts,
-                        entity_key_bin,
-                        feature_name,
-                    ),
-                )
-        with connect(**self.connect_args) as conn:
-            with conn.cursor(buffered=True) as cursor:
-                _insert_query = f"""
-                    insert ignore into {_table_name(project, table)} (entity_key,
-                    feature_name, value, event_ts, created_ts) values (
-                    %s, %s, %s, %s, %s)
-                """
-                cursor.execute(
-                    _insert_query,
-                    (
-                        entity_key_bin,
-                        feature_name,
-                        val.SerializeToString(),
-                        timestamp,
-                        created_ts,
-                    ),
-                )
+    # def insert_into_table(
+    #     self,
+    #     project,
+    #     table,
+    #     entity_key_bin,
+    #     feature_name,
+    #     timestamp,
+    #     created_ts,
+    #     val,
+    # ):
+    #     with connect(**self.connect_args) as conn:
+    #         with conn.cursor(buffered=True) as cursor:
+    #             _update_query = f"""
+    #                 update {_table_name(project, table)} set value = %s,
+    #                 event_ts = %s, created_ts = %s
+    #                 where (entity_key = %s and feature_name = %s)
+    #             """
+    #             cursor.execute(
+    #                 _update_query,
+    #                 (
+    #                     val.SerializeToString(),
+    #                     timestamp,
+    #                     created_ts,
+    #                     entity_key_bin,
+    #                     feature_name,
+    #                 ),
+    #             )
+    #     with connect(**self.connect_args) as conn:
+    #         with conn.cursor(buffered=True) as cursor:
+    #             _insert_query = f"""
+    #                 insert ignore into {_table_name(project, table)} (entity_key,
+    #                 feature_name, value, event_ts, created_ts) values (
+    #                 %s, %s, %s, %s, %s)
+    #             """
+    #             cursor.execute(
+    #                 _insert_query,
+    #                 (
+    #                     entity_key_bin,
+    #                     feature_name,
+    #                     val.SerializeToString(),
+    #                     timestamp,
+    #                     created_ts,
+    #                 ),
+    #             )
 
     def online_read(
         self,
@@ -133,30 +113,7 @@ class CustomOnlineStore(OnlineStore):
         requested_features: List[str] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
         self.initialize(config)
-        project = config.project
-        result = list()
-        for entity_key in entity_keys:
-            entity_key_bin = serialize_entity_key(entity_key).hex()
-            _query = f"""
-                select entity_key, feature_name, value, event_ts from
-                {_table_name(project, table)} where
-                entity_key = %s
-            """
-            with connect(**self.connect_args) as conn:
-                with conn.cursor(buffered=True) as cursor:
-                    cursor.execute(_query, (entity_key_bin,))
-                    res, res_ts = dict(), None
-                    for _, _feature_name, _value, _ts in cursor.fetchall():
-                        val = ValueProto()
-                        val.ParseFromString(_value)
-                        res[_feature_name] = val
-                        res_ts = _ts
-
-                    if not res:
-                        result.append((None, None))
-                    else:
-                        result.append((res_ts, res))
-        return result
+        return self.driver.online_read(config, table, entity_keys, requested_features)
 
     def update(
         self,
@@ -168,34 +125,13 @@ class CustomOnlineStore(OnlineStore):
         partial: bool,
     ):
         self.initialize(config)
-        project = config.project
-        with connect(**self.connect_args) as conn:
-            with conn.cursor(buffered=True) as cursor:
-                for table in tables_to_keep:
-                    _create_query = f"""
-                        create table IF NOT EXISTS {_table_name(project, table)
-                        } (entity_key VARCHAR(512), feature_name VARCHAR(256),
-                        value BLOB, event_ts timestamp, created_ts timestamp,
-                        PRIMARY KEY(entity_key, feature_name))
-                    """
-                    cursor.execute(_create_query)
-                    _index_query = f"""
-                        alter table {_table_name(project, table)} ADD INDEX
-                        {_table_name(project, table)}_ek (entity_key)
-                    """
-                    # cursor.execute(_index_query)
-
-        with connect(**self.connect_args) as conn:
-            with conn.cursor(buffered=True) as cursor:
-                for table in tables_to_delete:
-                    _drop_index = f"""
-                        drop index if exists {_table_name(project, table)}_ek on {_table_name(project, table)}
-                    """
-                    cursor.execute(_drop_index)
-                    _drop_table = f"""
-                        drop table if exists {_table_name(project, table)}
-                    """
-                    cursor.execute(_drop_table)
+        self.driver.update(
+            config,
+            tables_to_delete,
+            tables_to_keep,
+            entities_to_delete,
+            entities_to_keep, partial
+        )
 
     def teardown(
         self,
@@ -207,22 +143,27 @@ class CustomOnlineStore(OnlineStore):
         # Replace the code below in order to define your own custom teardown
         # operations
         self.initialize(config)
-        project = config.project
-        with connect(**self.connect_args) as conn:
-            with conn.cursor(buffered=True) as cursor:
-                for table in tables:
-                    _drop_table = f"""
-                        drop table if exists {_table_name(project, table)}
-                    """
-                    cursor.execute(_drop_table)
+        self.driver.teardown(config, tables, entities)
 
+    def process_materialize(
+        self,
+        config: RepoConfig,
+        start_date: datetime,
+        end_date: datetime,
+        feature_views:Optional[List[str]] = None
+    ) -> None:
+        self.initialize(config)
+        self.driver.call_materialize(
+            start_date, end_date, feature_views
+        )
 
-def _to_naive_utc(ts: datetime):
-    if ts.tzinfo is None:
-        return ts
-    else:
-        return ts.astimezone(pytz.utc).replace(tzinfo=None)
-
-
-def _table_name(project, table):
-    return "%s_%s" % (project, table.name)
+    def process_materialize_incremental(
+        self,
+        config: RepoConfig,
+        end_date: datetime,
+        feature_views:Optional[List[str]] = None
+    ) -> None:
+        self.initialize(config)
+        self.driver.call_materialize_incremental(
+            end_date, feature_views
+        )

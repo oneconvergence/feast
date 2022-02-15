@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -180,7 +180,7 @@ class FeatureViewQueryContext:
 def _upload_entity_df_into_mysql_and_get_entity_schema(
     config: RepoConfig,
     entity_df: Union[pd.DataFrame, str],
-) -> (EntitySchema, str):
+) -> Tuple[EntitySchema, str]:
     """
     Uploads a Pandas entity dataframe into MySQL table and constructs the
     schema from the original entity_df dataframe.

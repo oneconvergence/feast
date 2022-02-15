@@ -8,18 +8,22 @@ urllib3.disable_warnings()
 
 class DkubeClient(object):
     def __init__(self, **kwargs) -> None:
-        self.dkube_ip = "192.168.x.y"
-        self.dkube_port = 32222
-        self.token = ""
+        self.dkube_ip = kwargs.get("dkube_ip", "192.168.x.y")
+        self.dkube_port = kwargs.get("dkube_port", 32222)
+        self.dkube_endpoint = kwargs.get("dkube_endpoint", True)
+        self.token = kwargs.get("token", "")
 
     def api_endpoint(self, endpoint):
+        if not self.dkube_endpoint:
+            return f"http://{self.dkube_ip}:{self.dkube_port}/{endpoint}"
         return f"https://{self.dkube_ip}:{self.dkube_port}/dkube/v2/controller/{endpoint}"
 
     def headers(self, headers=None):
         dkube_headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.token}"
         }
+        if self.dkube_endpoint:
+            dkube_headers.update(Authorization=f"Bearer {self.token}")
         if headers and isinstance(dict, headers):
             dkube_headers.update(headers)
         return dkube_headers
