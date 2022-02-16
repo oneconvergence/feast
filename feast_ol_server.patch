@@ -1,7 +1,7 @@
-diff --git sdk/python/feast/feature_store.py sdk/python/feast/feature_store.py
-index 9655c5d1..bc02c9c2 100644
---- sdk/python/feast/feature_store.py
-+++ sdk/python/feast/feature_store.py
+diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
+index 9655c5d1..afdbef03 100644
+--- a/sdk/python/feast/feature_store.py
++++ b/sdk/python/feast/feature_store.py
 @@ -511,6 +511,38 @@ class FeatureStore:
                  table, project=self.project, commit=False
              )
@@ -90,7 +90,7 @@ index 9655c5d1..bc02c9c2 100644
 +            self._registry.commit(
 +                project=self.project, to_add=infra_update['to_add'], to_delete=infra_update['to_delete'])
 +        else:
-+            self._registry.add_feature_services()
++            self._registry.commit()
  
      @log_exceptions_and_usage
      def teardown(self):
@@ -103,10 +103,10 @@ index 9655c5d1..bc02c9c2 100644
  
      @log_exceptions_and_usage
      def get_historical_features(
-diff --git sdk/python/feast/registry.py sdk/python/feast/registry.py
-index 8cb646f6..e16980b9 100644
---- sdk/python/feast/registry.py
-+++ sdk/python/feast/registry.py
+diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
+index 8cb646f6..f91b8d8c 100644
+--- a/sdk/python/feast/registry.py
++++ b/sdk/python/feast/registry.py
 @@ -14,7 +14,7 @@
  
  from datetime import datetime, timedelta
@@ -116,7 +116,17 @@ index 8cb646f6..e16980b9 100644
  from urllib.parse import urlparse
  
  from google.protobuf.internal.containers import RepeatedCompositeFieldContainer
-@@ -658,18 +658,31 @@ class Registry:
+@@ -434,7 +434,8 @@ class Registry:
+                 del self.cached_registry_proto.feature_views[idx]
+                 self.cached_registry_proto.feature_views.append(feature_view_proto)
+                 if commit:
+-                    self.commit()
++                    kwds = {"project": project}
++                    self.commit(**kwds)
+                 return
+ 
+         raise FeatureViewNotFoundException(feature_view.name, project)
+@@ -658,18 +659,31 @@ class Registry:
  
          raise EntityNotFoundException(name, project)
  
@@ -125,8 +135,8 @@ index 8cb646f6..e16980b9 100644
          """Commits the state of the registry cache to the remote registry store."""
 -        if self.cached_registry_proto:
 +        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
-+            assert 'to_add' in kwargs
-+            assert 'to_delete' in kwargs
++            kwargs.setdefault("to_add", {})
++            kwargs.setdefault("to_delete", {})
 +            if self.cached_registry_proto:
 +                self._registry_store.update_registry_proto(self.cached_registry_proto, **kwargs)
 +        elif self.cached_registry_proto:
@@ -152,7 +162,7 @@ index 8cb646f6..e16980b9 100644
  
      def _prepare_registry_for_changes(self):
          """Prepares the Registry for changes by refreshing the cache if necessary."""
-@@ -734,3 +747,57 @@ class Registry:
+@@ -734,3 +748,57 @@ class Registry:
              fv.spec.name: fv for fv in self.cached_registry_proto.request_feature_views
          }
          return {**odfvs, **fvs, **request_fvs}

@@ -10,7 +10,7 @@
         cd feast/feast
         git submodule init
         git submodule update
-        patch -p0 < ../feast.patch
+        patch -p1 < ../feast.patch
         make install-python
 
 - Set PYTHONPATH:

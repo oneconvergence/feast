@@ -1,0 +1,17 @@
+{
+    "project": "",
+    "online_store": {
+        "ip": "",
+        "port": "",
+        "user": "",
+        "password": "",
+        "db": ""
+    },
+    "offline_store": {
+        "ip": "",
+        "port": "",
+        "user": "",
+        "password": "",
+        "db": ""
+    }
+}

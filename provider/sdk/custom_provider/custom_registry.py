@@ -56,7 +56,6 @@ class ProtoRegistryStore(RegistryStore):
         registry_proto.version_id = str(uuid.uuid4())
         registry_proto.last_updated.FromDatetime(datetime.utcnow())
         project = kwargs['project']
-        breakpoint()
         reg_data = {
             "project": project,
             "regblob": base64.b64encode(registry_proto.SerializeToString()).decode('ascii'),
@@ -72,7 +71,6 @@ class ProtoRegistryStore(RegistryStore):
         self.dkube.delete("registry", data=reg)
 
     def validate_infra_update_with_registry(self, update_infra):
-        breakpoint()
         json_res = self.dkube.post("registry/validate", data=update_infra)
         if json_res.get('valid') ==  False:
             raise Exception("Invalid registry input.")
