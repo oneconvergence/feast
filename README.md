@@ -20,3 +20,8 @@
         export PYTHONPATH=$BASE/provider/sdk/:$PYTHONPATH
 
 - That's it.
+
+## Generate repo configuraton
+
+        cd online_server
+        python -m common.utils.utils $(pwd)/config/cfg.json <name of o/p file>
