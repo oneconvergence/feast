@@ -6,7 +6,7 @@
 - Steps:
 
         git clone https://github.com/oneconvergence/feast.git
-        git checkout -b feast_changes origin/feast_changes
+        git checkout -b online_server_changes origin/online_server_changes
         cd feast/feast
         git submodule init
         git submodule update
