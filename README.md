@@ -6,11 +6,11 @@
 - Steps:
 
         git clone https://github.com/oneconvergence/feast.git
-        git checkout -b feast_changes origin/feast_changes
+        git checkout -b online_server_changes origin/online_server_changes
         cd feast/feast
         git submodule init
         git submodule update
-        patch -p0 < ../feast.patch
+        patch -p1 < ../feast.patch
         make install-python
 
 - Set PYTHONPATH:
@@ -20,3 +20,8 @@
         export PYTHONPATH=$BASE/provider/sdk/:$PYTHONPATH
 
 - That's it.
+
+## Generate repo configuraton
+
+        cd online_server
+        python -m common.utils.utils $(pwd)/config/cfg.json <name of o/p file>

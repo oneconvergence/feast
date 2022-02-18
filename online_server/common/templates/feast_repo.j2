@@ -1,0 +1,31 @@
+project: {{ input.project | default("dummy_project", true) }}
+registry:
+    registry_store_type: custom_provider.custom_registry.ProtoRegistryStore
+    {%- if input.registry %}
+    path: {{ input.registry.ip | default("fake_ip", true)+":"+
+            input.registry.port | default("fake_port", true)+":"+
+            input.registry.user | default("fake_user", true)+"@"+
+            input.registry.password | default("fake_password", true)+":"+
+            input.registry.db | default("fake_db", true)+":"+
+            input.registry.table | default("fake_table", true)
+        }}
+    {%- else %}
+    path: "fake_ip:fake_port:fake_user@fake_passwd:fake_db:fake_table"
+    {%- endif %}
+provider: custom_provider.proto_custom_provider.ProtoCustomProvider
+online_store:
+    type: custom_provider.custom_online_store.CustomOnlineStore
+    host: {{ input.online_store.ip | default("ol_fake_host", true) }}
+    port: {{ input.online_store.port | default("ol_fake_port", true) }}
+    db: {{ input.online_store.db | default("ol_fake_db", true) }}
+    user: {{ input.online_store.user | default("ol_fake_user", true) }}
+    password: {{ input.online_store.password | default("ol_fake_password", true) }}
+offline_store:
+    type: custom_provider.mysqlserver.MySQLOfflineStore
+    connection_str: {{
+        input.offline_store.ip | default("of_fake_ip", true)+":"+
+        input.offline_store.port | default("of_fake_port", true)+":"+
+        input.offline_store.user | default("of_fake_user", true)+"@"+
+        input.offline_store.password | default("of_fake_password", true)+":"+
+        input.offline_store.db | default("of_fake_db", true)
+    }}

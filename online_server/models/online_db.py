@@ -9,6 +9,11 @@ class Materialize(BaseModel):
     feature_views: Optional[List[str]]
 
 
+class MaterializeIncremental(BaseModel):
+    end_date: datetime
+    feature_views: Optional[List[str]]
+
+
 class InfraUpdate(BaseModel):
     project: str
     tables_to_delete: Sequence[str]

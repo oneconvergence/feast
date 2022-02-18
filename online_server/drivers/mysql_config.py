@@ -11,7 +11,7 @@ class MysqlConfig(metaclass=Base):
 
     def __init__(self) -> None:
         if not self._CONFIG:
-            with open(str(Path("feature_store.yaml").absolute()), "r") as f:
+            with open(str(Path("online_repo/feature_store.yaml").absolute()), "r") as f:
                 data = yaml.safe_load(f)
                 online_store = data["online_store"]
                 self._CONFIG = {

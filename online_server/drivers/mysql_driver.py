@@ -9,7 +9,7 @@ from drivers.mysql_config import MysqlConfig
 
 
 def get_repo_path() -> str:
-    repo_path = Path("feature_store.yaml").absolute()
+    repo_path = Path("online_repo/").absolute()
     repo_path_str = str(repo_path)
     return repo_path_str
 
@@ -19,6 +19,13 @@ def materialize(
 ) -> None:
     fs = FeatureStore(repo_path=get_repo_path())
     fs.materialize(start_date, end_date, feature_views)
+
+
+def materialize_incremental(
+    end_date: datetime, feature_views: Optional[List[str]] = None
+) -> None:
+    fs = FeatureStore(repo_path=get_repo_path())
+    fs.materialize_incremental(end_date, feature_views)
 
 
 def infra_update(

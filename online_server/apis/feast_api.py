@@ -1,6 +1,9 @@
+from datetime import datetime
+import json
+import traceback
 import fastapi
 from drivers import mysql_driver
-from models.online_db import InfraDelete, InfraUpdate, Materialize
+from models.online_db import InfraDelete, InfraUpdate, Materialize, MaterializeIncremental
 from models.exceptions import ValidationError
 
 router = fastapi.APIRouter()
@@ -17,6 +20,20 @@ async def materialize(materialize_input: Materialize) -> None:
     except ValidationError as ve:
         return fastapi.Response(content=ve.error_msg, status_code=ve.status_code)
     except Exception as ex:
+        return fastapi.Response(content=str(ex), status_code=500)
+
+
+@router.post("/api/v1/materialize_incr", name="materialize_incremental", status_code=201)
+async def materialize_incremental(materialize_input: MaterializeIncremental) -> None:
+    try:
+        mysql_driver.materialize_incremental(
+            materialize_input.end_date,
+            materialize_input.feature_views,
+        )
+    except ValidationError as ve:
+        return fastapi.Response(content=ve.error_msg, status_code=ve.status_code)
+    except Exception as ex:
+        print(traceback.format_exc())
         return fastapi.Response(content=str(ex), status_code=500)
 
 
@@ -43,6 +60,7 @@ async def teardown_infra(infra_delete: InfraDelete) -> None:
     except ValidationError as ve:
         return fastapi.Response(content=ve.error_msg, status_code=ve.status_code)
     except Exception as ex:
+        print(traceback.format_exc())
         return fastapi.Response(content=str(ex), status_code=500)
 
 
