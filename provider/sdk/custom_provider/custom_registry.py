@@ -1,10 +1,11 @@
+import ipaddress
+import sys
 import uuid
-import json
-import requests
+
 import base64
 from datetime import datetime
 from pathlib import Path
-from tempfile import TemporaryFile
+from decouple import config as dconfig
 
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.registry_store import RegistryStore
@@ -27,7 +28,16 @@ class ProtoRegistryStore(RegistryStore):
         reg_config = ":".join(config_args[:-1])
         self.connect_args = get_mysql_connect_args(reg_config)
         self._initialize_registry()
-        self.dkube = DkubeClient()
+        DKUBE_IP = dconfig("DKUBE_IP")
+        DKUBE_TOKEN = dconfig("DKUBE_TOKEN")
+        try:
+            ipaddress.ip_address(DKUBE_IP)
+        except ValueError:
+            sys.exit("Dkube cluster info not properly configured.")
+        if DKUBE_TOKEN == "":
+            sys.exit("Dkube access token not set.")
+
+        self.dkube = DkubeClient(**{"dkube_ip": DKUBE_IP, "token": DKUBE_TOKEN})
 
     def _initialize_registry(self):
         return

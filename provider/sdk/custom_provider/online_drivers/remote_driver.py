@@ -24,7 +24,7 @@ class OnlineRemoteDriver:
         if not self.online_server_client:
             self.online_server_client = OnlineServerClient(
                 dkube_ip=self.online_store_config.host,
-                port=self.online_store_config.port,
+                dkube_port=self.online_store_config.port,
                 token="",
                 dkube_endpoint=False
             )
