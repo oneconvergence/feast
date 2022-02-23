@@ -17,9 +17,6 @@ from provider.sdk.custom_provider.online_drivers.local_driver import OnlineLocal
 from provider.sdk.custom_provider.online_drivers.remote_driver import OnlineRemoteDriver
 
 
-DRIVER = "remote"
-
-
 class CustomOnlineStoreConfig(FeastConfigBaseModel):
     type: Literal[
         "custom_provider.custom_online_store.CustomOnlineStore"
@@ -37,11 +34,9 @@ class CustomOnlineStore(OnlineStore):
     def initialize(self, config):
         if self.driver:
             return self.driver
-        def get_driver(driver="remote"):
-            if driver.lower() == "remote":
-                return OnlineRemoteDriver(config)
-            return OnlineLocalDriver(config)
-        self.driver = get_driver(DRIVER)
+        self.driver = {}
+        self.driver["remote"] = OnlineRemoteDriver(config)
+        self.driver["local"] = OnlineLocalDriver(config)
 
     def online_write_batch(
         self,
@@ -58,52 +53,7 @@ class CustomOnlineStore(OnlineStore):
         progress: Optional[Callable[[int], Any]],
     ) -> None:
         self.initialize(config)
-        self.driver.online_write_batch(config, table, data, progress)
-
-    # def insert_into_table(
-    #     self,
-    #     project,
-    #     table,
-    #     entity_key_bin,
-    #     feature_name,
-    #     timestamp,
-    #     created_ts,
-    #     val,
-    # ):
-    #     with connect(**self.connect_args) as conn:
-    #         with conn.cursor(buffered=True) as cursor:
-    #             _update_query = f"""
-    #                 update {_table_name(project, table)} set value = %s,
-    #                 event_ts = %s, created_ts = %s
-    #                 where (entity_key = %s and feature_name = %s)
-    #             """
-    #             cursor.execute(
-    #                 _update_query,
-    #                 (
-    #                     val.SerializeToString(),
-    #                     timestamp,
-    #                     created_ts,
-    #                     entity_key_bin,
-    #                     feature_name,
-    #                 ),
-    #             )
-    #     with connect(**self.connect_args) as conn:
-    #         with conn.cursor(buffered=True) as cursor:
-    #             _insert_query = f"""
-    #                 insert ignore into {_table_name(project, table)} (entity_key,
-    #                 feature_name, value, event_ts, created_ts) values (
-    #                 %s, %s, %s, %s, %s)
-    #             """
-    #             cursor.execute(
-    #                 _insert_query,
-    #                 (
-    #                     entity_key_bin,
-    #                     feature_name,
-    #                     val.SerializeToString(),
-    #                     timestamp,
-    #                     created_ts,
-    #                 ),
-    #             )
+        self.driver["remote"].online_write_batch(config, table, data, progress)
 
     def online_read(
         self,
@@ -113,7 +63,7 @@ class CustomOnlineStore(OnlineStore):
         requested_features: List[str] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
         self.initialize(config)
-        return self.driver.online_read(config, table, entity_keys, requested_features)
+        return self.driver["local"].online_read(config, table, entity_keys, requested_features)
 
     def update(
         self,
@@ -125,7 +75,7 @@ class CustomOnlineStore(OnlineStore):
         partial: bool,
     ):
         self.initialize(config)
-        self.driver.update(
+        self.driver["remote"].update(
             config,
             tables_to_delete,
             tables_to_keep,
@@ -143,7 +93,7 @@ class CustomOnlineStore(OnlineStore):
         # Replace the code below in order to define your own custom teardown
         # operations
         self.initialize(config)
-        self.driver.teardown(config, tables, entities)
+        self.driver["remote"].teardown(config, tables, entities)
 
     def process_materialize(
         self,
@@ -153,7 +103,7 @@ class CustomOnlineStore(OnlineStore):
         feature_views:Optional[List[str]] = None
     ) -> None:
         self.initialize(config)
-        self.driver.call_materialize(
+        self.driver["remote"].call_materialize(
             start_date, end_date, feature_views
         )
 
@@ -164,6 +114,6 @@ class CustomOnlineStore(OnlineStore):
         feature_views:Optional[List[str]] = None
     ) -> None:
         self.initialize(config)
-        self.driver.call_materialize_incremental(
+        self.driver["remote"].call_materialize_incremental(
             end_date, feature_views
         )

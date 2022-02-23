@@ -1,4 +1,6 @@
 from datetime import datetime
+import sys
+from decouple import config
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from feast import Entity, FeatureTable, FeatureView, RepoConfig
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
@@ -12,16 +14,22 @@ class OnlineLocalDriver:
     online_store_config = None
     connect_args = None
 
-    def __init__(self, config: RepoConfig) -> None:
-        self.online_store_config = config.online_store
+    def __init__(self, repo_config: RepoConfig) -> None:
+        self.online_store_config = repo_config.online_store
         self.connect_args = {
-            "host": self.online_store_config.host,
-            "port": self.online_store_config.port,
-            "user": self.online_store_config.user,
-            "password": self.online_store_config.password,
             "database": self.online_store_config.db,
             "autocommit": True,
         }
+        host = config("ONLINE_SERVER_HOST")
+        port = config("ONLINE_SERVER_PORT")
+        user = config("ONLINE_SERVER_USER")
+        password = config("ONLINE_SERVER_SECRET")
+        any_val_unset = None in [host, port, user, password] \
+            or "" in [host, port, user, password]
+        if any_val_unset:
+            sys.exit("Config missing for feast store. Please contact administrator.")
+        self.connect_args.update(
+            host=host, port=port, user=user, password=password)
 
     def online_write_batch(
         self,
