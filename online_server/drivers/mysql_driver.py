@@ -6,12 +6,7 @@ from feast.feature_store import FeatureStore
 from mysql.connector import connect
 
 from drivers.mysql_config import MysqlConfig
-
-
-def get_repo_path() -> str:
-    repo_path = Path("online_repo/").absolute()
-    repo_path_str = str(repo_path)
-    return repo_path_str
+from common.utils.utils import get_repo_path
 
 
 def materialize(
