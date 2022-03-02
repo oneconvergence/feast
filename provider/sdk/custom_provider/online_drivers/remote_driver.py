@@ -1,4 +1,4 @@
-import json
+# import json
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -7,7 +7,7 @@ from feast import RepoConfig
 from feast.entity import Entity
 from feast.feature_table import FeatureTable
 from feast.feature_view import FeatureView
-from feast.infra.key_encoding_utils import serialize_entity_key
+# from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
@@ -122,30 +122,32 @@ class OnlineRemoteDriver:
         entity_keys: List[EntityKeyProto],
         requested_features: List[str] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
-        project = config.project
-        result = list()
-        for entity_key in entity_keys:
-            entity_key_bin = serialize_entity_key(entity_key).hex()
-            _query = f"""
-                select entity_key, feature_name, value, event_ts from
-                {_table_name(project, table)} where
-                entity_key = %s
-            """
-            with connect(**self.connect_args) as conn:
-                with conn.cursor(buffered=True) as cursor:
-                    cursor.execute(_query, (entity_key_bin,))
-                    res, res_ts = dict(), None
-                    for _, _feature_name, _value, _ts in cursor.fetchall():
-                        val = ValueProto()
-                        val.ParseFromString(_value)
-                        res[_feature_name] = val
-                        res_ts = _ts
+        """ Placeholder only. Not used with remote driver. """
+        # project = config.project
+        # result = list()
+        # for entity_key in entity_keys:
+        #     entity_key_bin = serialize_entity_key(entity_key).hex()
+        #     _query = f"""
+        #         select entity_key, feature_name, value, event_ts from
+        #         {_table_name(project, table)} where
+        #         entity_key = %s
+        #     """
+        #     with connect(**self.connect_args) as conn:
+        #         with conn.cursor(buffered=True) as cursor:
+        #             cursor.execute(_query, (entity_key_bin,))
+        #             res, res_ts = dict(), None
+        #             for _, _feature_name, _value, _ts in cursor.fetchall():
+        #                 val = ValueProto()
+        #                 val.ParseFromString(_value)
+        #                 res[_feature_name] = val
+        #                 res_ts = _ts
 
-                    if not res:
-                        result.append((None, None))
-                    else:
-                        result.append((res_ts, res))
-        return result
+        #             if not res:
+        #                 result.append((None, None))
+        #             else:
+        #                 result.append((res_ts, res))
+        # return result
+        pass
 
     def update(
         self,
