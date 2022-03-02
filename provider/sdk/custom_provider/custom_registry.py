@@ -12,20 +12,9 @@ from feast.repo_config import RegistryConfig
 from mysql.connector import Error, connect
 from provider.sdk.custom_provider.dkube_client import DkubeClient
 
-from provider.sdk.custom_provider.utils import get_mysql_connect_args
-
 
 class ProtoRegistryStore(RegistryStore):
     def __init__(self, registry_config: RegistryConfig, repo_path: Path):
-        # <IP:Port>:user@password:db:registry_name
-        reg_config = registry_config.path
-        config_args = reg_config.split(":")
-        if len(config_args) != 5:
-            raise ValueError("")
-        self._table = config_args[-1]
-        reg_config = ":".join(config_args[:-1])
-        self.connect_args = get_mysql_connect_args(reg_config)
-        self._initialize_registry()
         DKUBE_IP = dconfig("DKUBE_IP")
         DKUBE_TOKEN = dconfig("DKUBE_TOKEN")
         try:
@@ -36,18 +25,6 @@ class ProtoRegistryStore(RegistryStore):
             sys.exit("Dkube access token not set.")
 
         self.dkube = DkubeClient(**{"dkube_ip": DKUBE_IP, "token": DKUBE_TOKEN})
-
-
-    def _initialize_registry(self):
-        return
-        try:
-            with connect(**self.connect_args) as conn:
-                _query = f"""create table if not exists {self._table } (
-                         reg_content longblob)"""
-                with conn.cursor(buffered=True) as cursor:
-                    cursor.execute(_query)
-        except Error as err:
-            print(err)
 
     def get_registry_proto(self, **kwargs) -> RegistryProto:
         registry_proto = RegistryProto()
