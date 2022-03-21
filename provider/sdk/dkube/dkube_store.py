@@ -12,23 +12,18 @@ from feast.repo_config import FeastConfigBaseModel
 # from mysql.connector import connect
 from pydantic import StrictStr
 from pydantic.typing import Literal
-from provider.sdk.custom_provider.online_drivers.local_driver import OnlineLocalDriver
+from provider.sdk.dkube.online_drivers.local_driver import OnlineLocalDriver
 
-from provider.sdk.custom_provider.online_drivers.remote_driver import OnlineRemoteDriver
+from provider.sdk.dkube.online_drivers.remote_driver import OnlineRemoteDriver
 
 
-class CustomOnlineStoreConfig(FeastConfigBaseModel):
+class DkubeOnlineStoreConfig(FeastConfigBaseModel):
     type: Literal[
-        "custom_provider.custom_online_store.CustomOnlineStore"
-    ] = "custom_provider.custom_online_store.CustomOnlineStore"
-    host: Optional[StrictStr] = None
-    port: Optional[StrictStr] = None
-    user: Optional[StrictStr] = None
-    password: Optional[StrictStr] = None
-    db: Optional[StrictStr] = None
+        "dkube.dkube_store.DkubeOnlineStore"
+    ] = "dkube.dkube_store.DkubeOnlineStore"
 
 
-class CustomOnlineStore(OnlineStore):
+class DkubeOnlineStore(OnlineStore):
     driver: Union[OnlineRemoteDriver, OnlineLocalDriver] = None
 
     def initialize(self, config):

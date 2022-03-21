@@ -11,20 +11,20 @@ from feast.feature_view import FeatureView
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
-from provider.sdk.custom_provider.online_drivers.online_server_client import \
+from provider.sdk.dkube.online_drivers.online_server_client import \
     OnlineServerClient
+from provider.sdk.dkube.utils import get_dkube_server_config
 
 
 class OnlineRemoteDriver:
-    online_store_config = None
     online_server_client: Optional[OnlineServerClient] = None
 
     def __init__(self, config: RepoConfig) -> None:
-        self.online_store_config = config.online_store
         if not self.online_server_client:
+            self.dkube_server = get_dkube_server_config()
             self.online_server_client = OnlineServerClient(
-                dkube_ip=self.online_store_config.host,
-                dkube_port=self.online_store_config.port,
+                dkube_ip=self.dkube_server["host"],
+                dkube_port=self.dkube_server["port"],
                 token="",
                 dkube_endpoint=False
             )

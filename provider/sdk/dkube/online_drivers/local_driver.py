@@ -1,6 +1,7 @@
 from datetime import datetime
+from pathlib import Path
 import sys
-from decouple import config
+from decouple import AutoConfig
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from feast import Entity, FeatureTable, FeatureView, RepoConfig
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
@@ -9,6 +10,10 @@ from feast.infra.key_encoding_utils import serialize_entity_key
 from mysql.connector import connect
 import pytz
 
+from provider.sdk.dkube.utils import get_dkube_db_config
+
+dconfig = AutoConfig(search_path=str(Path.home()))
+
 
 class OnlineLocalDriver:
     online_store_config = None
@@ -16,20 +21,21 @@ class OnlineLocalDriver:
 
     def __init__(self, repo_config: RepoConfig) -> None:
         self.online_store_config = repo_config.online_store
+        self.dkube_store = get_dkube_db_config() 
         self.connect_args = {
-            "database": self.online_store_config.db,
             "autocommit": True,
         }
-        host = config("ONLINE_SERVER_HOST")
-        port = config("ONLINE_SERVER_PORT")
-        user = config("ONLINE_SERVER_USER")
-        password = config("ONLINE_SERVER_SECRET")
+        host = self.dkube_store["host"]
+        port = self.dkube_store["port"]
+        user = self.dkube_store["user"]
+        password = self.dkube_store["secret"]
+        database = self.dkube_store["db"]
         any_val_unset = None in [host, port, user, password] \
             or "" in [host, port, user, password]
         if any_val_unset:
             sys.exit("Config missing for feast store. Please contact administrator.")
         self.connect_args.update(
-            host=host, port=port, user=user, password=password)
+            host=host, port=port, user=user, password=password, database=database)
 
     def online_write_batch(
         self,

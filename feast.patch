@@ -1,5 +1,5 @@
 diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
-index 9655c5d1..ea1252af 100644
+index 9655c5d1..bf591003 100644
 --- a/sdk/python/feast/feature_store.py
 +++ b/sdk/python/feast/feature_store.py
 @@ -511,6 +511,38 @@ class FeatureStore:
@@ -74,7 +74,7 @@ index 9655c5d1..ea1252af 100644
 +            "feature_tables": delete_feature_tables
 +        }
 +
-+        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry._registry_store.__class__.__name__.lower():
 +            self._registry.update_newly_added_attrs(infra_update)
 +            self._registry.validate_infra_update(infra_update)
 +
@@ -86,7 +86,7 @@ index 9655c5d1..ea1252af 100644
          )
  
 -        self._registry.commit()
-+        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry._registry_store.__class__.__name__.lower():
 +            self._registry.commit(
 +                project=self.project, to_add=infra_update['to_add'], to_delete=infra_update['to_delete'])
 +        else:
@@ -107,7 +107,7 @@ index 9655c5d1..ea1252af 100644
              <BLANKLINE>
              ...
          """
-+        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry._registry_store.__class__.__name__.lower():
 +            # Proxy materialize call to online server.
 +            self._get_provider().proxy_materialize_incremental(
 +                end_date, feature_views
@@ -121,7 +121,7 @@ index 9655c5d1..ea1252af 100644
                  f"The given start_date {start_date} is greater than the given end_date {end_date}."
              )
  
-+        if "protoregistrystore" == self._registry._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry._registry_store.__class__.__name__.lower():
 +            # Proxy materialize call to online server.
 +            self._get_provider().proxy_materialize(
 +                start_date, end_date, feature_views
@@ -159,7 +159,7 @@ index 34bf4902..1b2f4392 100644
 +            self.repo_config, end_date, feature_views
 +        )
 diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
-index 8cb646f6..e16980b9 100644
+index 8cb646f6..a62bef23 100644
 --- a/sdk/python/feast/registry.py
 +++ b/sdk/python/feast/registry.py
 @@ -14,7 +14,7 @@
@@ -179,7 +179,7 @@ index 8cb646f6..e16980b9 100644
 +    def commit(self, **kwargs):
          """Commits the state of the registry cache to the remote registry store."""
 -        if self.cached_registry_proto:
-+        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry_store.__class__.__name__.lower():
 +            assert 'to_add' in kwargs
 +            assert 'to_delete' in kwargs
 +            if self.cached_registry_proto:
@@ -188,7 +188,7 @@ index 8cb646f6..e16980b9 100644
              self._registry_store.update_registry_proto(self.cached_registry_proto)
  
 +    def validate_infra_update(self, update_infra):
-+        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry_store.__class__.__name__.lower():
 +            self._registry_store.validate_infra_update_with_registry(update_infra)
 +
      def refresh(self):
@@ -199,7 +199,7 @@ index 8cb646f6..e16980b9 100644
 +    def teardown(self, **kwargs):
          """Tears down (removes) the registry."""
 -        self._registry_store.teardown()
-+        if "protoregistrystore" == self._registry_store.__class__.__name__.lower():
++        if "dkuberegistrystore" == self._registry_store.__class__.__name__.lower():
 +            assert 'project' in kwargs
 +            self._registry_store.teardown(project=kwargs['project'])
 +        else:
