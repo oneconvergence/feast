@@ -1,22 +1,23 @@
 import ipaddress
 import sys
 import uuid
+
 import base64
 from datetime import datetime
 from pathlib import Path
 
-from decouple import config as dconfig
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.registry_store import RegistryStore
 from feast.repo_config import RegistryConfig
-from mysql.connector import Error, connect
-from provider.sdk.custom_provider.dkube_client import DkubeClient
+from provider.sdk.dkube.dkube_client import DkubeClient
+from provider.sdk.dkube.utils import get_registry_config
 
 
-class ProtoRegistryStore(RegistryStore):
+class DkubeRegistryStore(RegistryStore):
     def __init__(self, registry_config: RegistryConfig, repo_path: Path):
-        DKUBE_IP = dconfig("DKUBE_IP")
-        DKUBE_TOKEN = dconfig("DKUBE_TOKEN")
+        reg_conf = get_registry_config()
+        DKUBE_IP = reg_conf("ip")
+        DKUBE_TOKEN = reg_conf("token")
         try:
             ipaddress.ip_address(DKUBE_IP)
         except ValueError:

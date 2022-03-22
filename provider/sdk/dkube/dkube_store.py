@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-import itertools
 import pytz
 from feast import RepoConfig
 from feast.entity import Entity
@@ -13,22 +12,18 @@ from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from feast.repo_config import FeastConfigBaseModel
 from mysql.connector import connect
+from provider.sdk.dkube.utils import get_dkube_db_config
 from pydantic import StrictStr
 from pydantic.typing import Literal
 
 
-class CustomOnlineStoreConfig(FeastConfigBaseModel):
+class DkubeOnlineStoreConfig(FeastConfigBaseModel):
     type: Literal[
-        "custom_provider.custom_online_store.CustomOnlineStore"
-    ] = "custom_provider.custom_online_store.CustomOnlineStore"
-    host: Optional[StrictStr] = None
-    port: Optional[StrictStr] = None
-    user: Optional[StrictStr] = None
-    password: Optional[StrictStr] = None
-    db: Optional[StrictStr] = None
+        "dkube.dkube_store.DkubeOnlineStore"
+    ] = "dkube.dkube_store.DkubeOnlineStore"
 
 
-class CustomOnlineStore(OnlineStore):
+class DkubeOnlineStore(OnlineStore):
     online_store_config = None
     connect_args = None
 
@@ -36,14 +31,7 @@ class CustomOnlineStore(OnlineStore):
         if self.online_store_config:
             return
         self.online_store_config = config.online_store
-        self.connect_args = {
-            "host": self.online_store_config.host,
-            "port": self.online_store_config.port,
-            "user": self.online_store_config.user,
-            "password": self.online_store_config.password,
-            "database": self.online_store_config.db,
-            "autocommit": True,
-        }
+        self.connect_args = get_dkube_db_config()
 
     def online_write_batch(
         self,
