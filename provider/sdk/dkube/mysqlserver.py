@@ -306,9 +306,7 @@ class MySQLRetrievalJob(RetrievalJob):
         self._full_feature_names = full_feature_names
         self._on_demand_feature_views = on_demand_feature_views
         self._drop_columns = drop_columns
-        self._connect_args = get_mysql_connect_args(
-            config.offline_store.connection_str
-        )
+        self._connect_args = get_mysql_connect_args()
         _mysql_url = get_mysql_url(self._connect_args)
         self.engine = create_engine(_mysql_url)
 

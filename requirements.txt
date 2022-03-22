@@ -2,3 +2,4 @@ python-decouple
 mysql-connector
 sqlalchemy
 ipaddress
+pymysql
