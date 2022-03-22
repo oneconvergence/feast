@@ -5,6 +5,12 @@ from typing import Optional
 import jinja2
 import yaml
 
+def get_repo_path() -> str:
+    repo_path = Path("online_repo/").absolute()
+    repo_path_str = str(repo_path)
+    return repo_path_str
+
+
 def gen_template(
     input_file: str,
     output_file: str,
