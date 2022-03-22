@@ -309,7 +309,7 @@ class MySQLRetrievalJob(RetrievalJob):
         self._connect_args = get_mysql_connect_args(
             config.offline_store.connection_str
         )
-        _mysql_url = get_mysql_url(self._connect_args)
+        _mysql_url = get_mysql_url()
         self.engine = create_engine(_mysql_url)
 
     @property

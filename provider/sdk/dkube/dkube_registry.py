@@ -16,8 +16,8 @@ from provider.sdk.dkube.utils import get_registry_config
 class DkubeRegistryStore(RegistryStore):
     def __init__(self, registry_config: RegistryConfig, repo_path: Path):
         reg_conf = get_registry_config()
-        DKUBE_IP = reg_conf("ip")
-        DKUBE_TOKEN = reg_conf("token")
+        DKUBE_IP = reg_conf["ip"]
+        DKUBE_TOKEN = reg_conf["token"]
         try:
             ipaddress.ip_address(DKUBE_IP)
         except ValueError:

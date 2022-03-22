@@ -5,20 +5,16 @@ dconfig = AutoConfig(search_path=str(Path.home()))
 
 
 def get_offline_store_conf():
-    host = dconfig("OFFLINE_HOST")
-    user = dconfig("OFFLINE_USER")
-    port = dconfig("OFFLINE_PORT")
-    password = dconfig("OFFLINE_SECRET")
-    db = dconfig("OFFLINE_DB")
     return {
-        "user": user,
-        "host": host,
-        "port": port,
-        "password": password,
-        "db": db
+        "user": dconfig("OFFLINE_USER"),
+        "host": dconfig("OFFLINE_HOST"),
+        "port": dconfig("OFFLINE_PORT"),
+        "password": dconfig("OFFLINE_SECRET"),
+        "db": dconfig("OFFLINE_DB")
     }
 
-def get_mysql_connect_args(connection_str):
+
+def get_mysql_connect_args(connection_str=None):
     if connection_str:
         mysql_config = connection_str.split(":")
         mysql_ip = mysql_config[0]
@@ -39,12 +35,14 @@ def get_mysql_connect_args(connection_str):
     conf.update(autocommit=True)
     return conf
 
-def get_mysql_url(_connect_args):
+
+def get_mysql_url(_connect_args=None):
     if not _connect_args:
         _connect_args = get_offline_store_conf()
     return f"""mysql+pymysql://{_connect_args['user']}:{
         _connect_args['password']}@{_connect_args['host']}:{
-        _connect_args['port']}/{_connect_args['database']}"""
+        _connect_args['port']}/{_connect_args.get('database',
+         _connect_args['db'])}"""
 
 
 def get_offline_connection_str():
@@ -60,6 +58,7 @@ def get_dkube_server_config():
         "port": dconfig("ONLINE_SERVER_PORT")
     }
 
+
 def get_dkube_db_config():
     return {
         "host": dconfig("DKUBE_DB"),
@@ -68,6 +67,7 @@ def get_dkube_db_config():
         "secret": dconfig("DKUBE_DB_SECRET"),
         "db": dconfig("DKUBE_DBSTORE")
     }
+
 
 def get_registry_config():
     return {
