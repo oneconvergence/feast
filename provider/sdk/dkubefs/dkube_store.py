@@ -12,9 +12,9 @@ from feast.repo_config import FeastConfigBaseModel
 # from mysql.connector import connect
 from pydantic import StrictStr
 from pydantic.typing import Literal
-from provider.sdk.dkube.online_drivers.local_driver import OnlineLocalDriver
+from provider.sdk.dkubefs.online_drivers.local_driver import OnlineLocalDriver
 
-from provider.sdk.dkube.online_drivers.remote_driver import OnlineRemoteDriver
+from provider.sdk.dkubefs.online_drivers.remote_driver import OnlineRemoteDriver
 
 
 class DkubeOnlineStoreConfig(FeastConfigBaseModel):

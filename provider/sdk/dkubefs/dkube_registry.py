@@ -10,7 +10,7 @@ from decouple import AutoConfig
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.registry_store import RegistryStore
 from feast.repo_config import RegistryConfig
-from provider.sdk.dkube.dkube_client import DkubeClient
+from provider.sdk.dkubefs.dkube_client import DkubeClient
 
 dconfig = AutoConfig(search_path=str(Path.home()))
 

@@ -1,4 +1,4 @@
-from provider.sdk.dkube.dkube_client import DkubeClient
+from provider.sdk.dkubefs.dkube_client import DkubeClient
 
 
 class OnlineServerClient(DkubeClient):

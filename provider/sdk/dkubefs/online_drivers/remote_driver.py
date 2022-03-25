@@ -11,9 +11,9 @@ from feast.feature_view import FeatureView
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
-from provider.sdk.dkube.online_drivers.online_server_client import \
+from provider.sdk.dkubefs.online_drivers.online_server_client import \
     OnlineServerClient
-from provider.sdk.dkube.utils import get_dkube_server_config
+from provider.sdk.dkubefs.utils import get_dkube_server_config
 
 
 class OnlineRemoteDriver:

@@ -10,7 +10,7 @@ from feast.infra.key_encoding_utils import serialize_entity_key
 from mysql.connector import connect
 import pytz
 
-from provider.sdk.dkube.utils import get_dkube_db_config
+from provider.sdk.dkubefs.utils import get_dkube_db_config
 
 dconfig = AutoConfig(search_path=str(Path.home()))
 

@@ -19,8 +19,8 @@ from mysql.connector import connect
 from pydantic.types import StrictStr
 from pydantic.typing import Literal
 from sqlalchemy import create_engine
-from provider.sdk.dkube.mysqlserver_source import MySQLServerSource
-from provider.sdk.dkube.utils import get_mysql_connect_args, \
+from provider.sdk.dkubefs.mysqlserver_source import MySQLServerSource
+from provider.sdk.dkubefs.utils import get_mysql_connect_args, \
      get_mysql_url
 
 
