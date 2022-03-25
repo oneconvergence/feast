@@ -8,7 +8,7 @@ from feast.protos.feast.core.DataSource_pb2 import \
     DataSource as DataSourceProto
 from mysql.connector import connect
 
-from provider.sdk.dkube.utils import get_mysql_connect_args, get_offline_connection_str
+from provider.sdk.dkubefs.utils import get_mysql_connect_args, get_offline_connection_str
 
 
 class MySQLOptions:

@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 from common.base import Base
-from provider.sdk.dkube.utils import get_dkube_db_config
+from provider.sdk.dkubefs.utils import get_dkube_db_config
 
 
 class MysqlConfig(metaclass=Base):
