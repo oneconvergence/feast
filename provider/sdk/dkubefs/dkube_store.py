@@ -19,8 +19,8 @@ from pydantic.typing import Literal
 
 class DkubeOnlineStoreConfig(FeastConfigBaseModel):
     type: Literal[
-        "dkube.dkube_store.DkubeOnlineStore"
-    ] = "dkube.dkube_store.DkubeOnlineStore"
+        "dkubefs.dkube_store.DkubeOnlineStore"
+    ] = "dkubefs.dkube_store.DkubeOnlineStore"
 
 
 class DkubeOnlineStore(OnlineStore):
