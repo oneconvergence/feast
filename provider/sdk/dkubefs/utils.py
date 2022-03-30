@@ -71,6 +71,7 @@ def get_dkube_db_config():
 
 def get_registry_config():
     return {
-        "ip": dconfig("DKUBE_IP"),
+        # "ip": dconfig("DKUBE_IP"),
+        "url": dconfig("DKUBE_URL"),
         "token": dconfig("DKUBE_TOKEN")
     }

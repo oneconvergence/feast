@@ -29,7 +29,7 @@ EntitySchema = Dict[str, np.dtype]
 
 
 class MySQLOfflineStoreConfig(FeastConfigBaseModel):
-    type: Literal["dkube.mysqlserver.MySQLOfflineStore"]
+    type: Literal["dkubefs.mysqlserver.MySQLOfflineStore"]
 
 
 class MySQLOfflineStore(OfflineStore):

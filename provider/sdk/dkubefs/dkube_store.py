@@ -19,8 +19,8 @@ from provider.sdk.dkubefs.online_drivers.remote_driver import OnlineRemoteDriver
 
 class DkubeOnlineStoreConfig(FeastConfigBaseModel):
     type: Literal[
-        "dkube.dkube_store.DkubeOnlineStore"
-    ] = "dkube.dkube_store.DkubeOnlineStore"
+        "dkubefs.dkube_store.DkubeOnlineStore"
+    ] = "dkubefs.dkube_store.DkubeOnlineStore"
 
 
 class DkubeOnlineStore(OnlineStore):
