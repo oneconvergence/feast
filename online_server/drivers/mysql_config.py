@@ -1,9 +1,7 @@
-from pathlib import Path
 from typing import Any, Dict, Optional
 
-import yaml
-
 from common.base import Base
+from provider.sdk.dkubefs.utils import get_dkube_db_config
 
 
 class MysqlConfig(metaclass=Base):
@@ -11,18 +9,15 @@ class MysqlConfig(metaclass=Base):
 
     def __init__(self) -> None:
         if not self._CONFIG:
-            with open(str(Path("online_repo/feature_store.yaml").absolute()), "r") as f:
-                data = yaml.safe_load(f)
-                online_store = data["online_store"]
-                self._CONFIG = {
-                    "host": online_store["host"],
-                    "port": online_store["port"],
-                    "user": online_store["user"],
-                    "password": online_store["password"],
-                    "database": online_store["db"],
-                    # "db": online_store["db"],
-                    "autocommit": True,
-                }
+            online_store = get_dkube_db_config()
+            self._CONFIG = {
+                "host": online_store["host"],
+                "port": online_store["port"],
+                "user": online_store["user"],
+                "password": online_store["secret"],
+                "database": online_store["db"],
+                "autocommit": True,
+            }
 
     @staticmethod
     def get_config():

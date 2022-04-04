@@ -8,7 +8,7 @@ from feast.protos.feast.core.DataSource_pb2 import \
     DataSource as DataSourceProto
 from mysql.connector import connect
 
-from provider.sdk.custom_provider.utils import get_mysql_connect_args
+from provider.sdk.dkubefs.utils import get_mysql_connect_args, get_offline_connection_str
 
 
 class MySQLOptions:
@@ -58,14 +58,13 @@ class MySQLOptions:
 class MySQLServerSource(DataSource):
     def __init__(
         self,
-        connection_str,
         event_timestamp_column: Optional[str] = "",
         table_ref: Optional[str] = None,
         created_timestamp_column: Optional[str] = "",
         field_mapping: Optional[Dict[str, str]] = None,
         date_partition_column: Optional[str] = "",
-        # conection_strn: Optional[str] = "",
     ):
+        connection_str = get_offline_connection_str()
         self._mysql_options = MySQLOptions(connection_str, table_ref)
         self._connection_str = connection_str
         self._table_ref = table_ref
@@ -112,7 +111,6 @@ class MySQLServerSource(DataSource):
         return MySQLServerSource(
             field_mapping=dict(data_source.field_mapping),
             table_ref=options["table_ref"],
-            connection_str=options["connection_str"],
             event_timestamp_column=data_source.event_timestamp_column,
             created_timestamp_column=data_source.created_timestamp_column,
             date_partition_column=data_source.date_partition_column,

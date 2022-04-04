@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Union
+from pathlib import Path
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
 import pyarrow
+from decouple import AutoConfig
 from feast import OnDemandFeatureView, errors
 from feast.data_source import DataSource
 from feast.feature_view import DUMMY_ENTITY_ID, DUMMY_ENTITY_VAL, FeatureView
@@ -17,31 +19,26 @@ from mysql.connector import connect
 from pydantic.types import StrictStr
 from pydantic.typing import Literal
 from sqlalchemy import create_engine
-
-
-from provider.sdk.custom_provider.mysqlserver_source import MySQLServerSource
-from provider.sdk.custom_provider.utils import get_mysql_connect_args, \
+from provider.sdk.dkubefs.mysqlserver_source import MySQLServerSource
+from provider.sdk.dkubefs.utils import get_mysql_connect_args, \
      get_mysql_url
 
+
+dconfig = AutoConfig(search_path=str(Path.home()))
 EntitySchema = Dict[str, np.dtype]
 
 
 class MySQLOfflineStoreConfig(FeastConfigBaseModel):
-    type: Literal["custom_provider.mysqlserver.MySQLOfflineStore"]
-    connection_str: StrictStr
+    type: Literal["dkubefs.mysqlserver.MySQLOfflineStore"]
 
 
 class MySQLOfflineStore(OfflineStore):
     def __init__(self):
-        self.offline_store_config = None
         self.mysql_connect_args = None
 
     def _get_mysql_connect_config(self, config: RepoConfig) -> Dict:
-        if not self.offline_store_config:
-            offline_config = config.offline_store
-            self.mysql_connect_args = get_mysql_connect_args(
-                offline_config.connection_str
-            )
+        if not self.mysql_connect_args:
+            self.mysql_connect_args = get_mysql_connect_args()
         return self.mysql_connect_args
 
     @staticmethod
@@ -57,7 +54,7 @@ class MySQLOfflineStore(OfflineStore):
     ) -> RetrievalJob:
         assert type(data_source).__name__ == "MySQLServerSource"
         assert config.offline_store.type == (
-            "custom_provider.mysqlserver.MySQLOfflineStore"
+            "dkubefs.mysqlserver.MySQLOfflineStore"
         )
         from_expression = data_source.get_table_query_string()
 
@@ -180,7 +177,7 @@ class FeatureViewQueryContext:
 def _upload_entity_df_into_mysql_and_get_entity_schema(
     config: RepoConfig,
     entity_df: Union[pd.DataFrame, str],
-) -> (EntitySchema, str):
+) -> Tuple[EntitySchema, str]:
     """
     Uploads a Pandas entity dataframe into MySQL table and constructs the
     schema from the original entity_df dataframe.
@@ -309,9 +306,7 @@ class MySQLRetrievalJob(RetrievalJob):
         self._full_feature_names = full_feature_names
         self._on_demand_feature_views = on_demand_feature_views
         self._drop_columns = drop_columns
-        self._connect_args = get_mysql_connect_args(
-            config.offline_store.connection_str
-        )
+        self._connect_args = get_mysql_connect_args()
         _mysql_url = get_mysql_url(self._connect_args)
         self.engine = create_engine(_mysql_url)
 
