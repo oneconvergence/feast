@@ -1,4 +1,3 @@
-import ipaddress
 import sys
 import uuid
 
@@ -9,7 +8,6 @@ from pathlib import Path
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.registry_store import RegistryStore
 from feast.repo_config import RegistryConfig
-from provider.sdk.dkubefs.dkube_client import DkubeClient
 from provider.sdk.dkubefs.utils import get_registry_config
 
 from dkube.sdk import DkubeApi

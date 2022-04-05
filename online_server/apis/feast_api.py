@@ -9,6 +9,11 @@ from models.exceptions import ValidationError
 router = fastapi.APIRouter()
 
 
+@router.get("/ping", name="ping", status_code=200)
+def ping():
+    return {"message": "pong"}
+
+
 @router.post("/api/v1/materialize", name="materialize", status_code=201)
 async def materialize(materialize_input: Materialize) -> None:
     try:

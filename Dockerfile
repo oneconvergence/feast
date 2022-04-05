@@ -4,7 +4,7 @@ WORKDIR /usr/src/feast
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PYTHONPATH=$PYTHONPATH:$WORKDIR:$WORKDIR/provider/sdk
+ENV PYTHONPATH=$PYTHONPATH:/usr/src/feast:/usr/src/feast/provider/sdk
 
 RUN apt-get update \
     && apt-get -y install gcc git build-essential procps net-tools \
@@ -19,6 +19,8 @@ RUN pip install --no-cache-dir -r ./online_server/requirements.txt
 RUN git submodule init && git submodule update
 
 RUN cd ./feast/ && make install-python
+
+RUN pip3 install git+https://github.com/oneconvergence/dkube.git@feast_changes --upgrade
 
 WORKDIR /usr/src/feast/online_server
 
