@@ -12,9 +12,12 @@ class DkubeClient(object):
         self.dkube_port = kwargs.get("dkube_port", 32222)
         self.dkube_endpoint = kwargs.get("dkube_endpoint", True)
         self.token = kwargs.get("token", "")
+        self.dkube_url = kwargs.get("dkube_url", "")
 
     def api_endpoint(self, endpoint):
         if not self.dkube_endpoint:
+            if self.dkube_url:
+                return self.dkube_url
             return f"http://{self.dkube_ip}:{self.dkube_port}/{endpoint}"
         return f"https://{self.dkube_ip}:{self.dkube_port}/dkube/v2/controller/{endpoint}"
 

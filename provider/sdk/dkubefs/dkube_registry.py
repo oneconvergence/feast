@@ -1,5 +1,9 @@
+from importlib.abc import Loader
+import os
+import re
 import sys
 import uuid
+import yaml
 
 import base64
 from datetime import datetime
@@ -8,19 +12,14 @@ from pathlib import Path
 from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.registry_store import RegistryStore
 from feast.repo_config import RegistryConfig
-from provider.sdk.dkubefs.utils import get_registry_config
+from provider.sdk.dkubefs.utils import get_dkube_client
 
 from dkube.sdk import DkubeApi
 
 
 class DkubeRegistryStore(RegistryStore):
     def __init__(self, registry_config: RegistryConfig, repo_path: Path):
-        reg_conf = get_registry_config()
-        DKUBE_URL = reg_conf["url"]
-        DKUBE_TOKEN = reg_conf["token"]
-        if DKUBE_TOKEN == "":
-            sys.exit("Dkube access token not set.")
-        self.dkube = DkubeApi(URL=DKUBE_URL, token=DKUBE_TOKEN)
+        self.dkube = get_dkube_client()
 
     def get_registry_proto(self, **kwargs) -> RegistryProto:
         registry_proto = RegistryProto()
