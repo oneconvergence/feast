@@ -4,12 +4,14 @@ from pydantic import BaseModel
 
 
 class Materialize(BaseModel):
+    project: str
     start_date: datetime
     end_date: datetime
     feature_views: Optional[List[str]]
 
 
 class MaterializeIncremental(BaseModel):
+    project: str
     end_date: datetime
     feature_views: Optional[List[str]]
 

@@ -4,3 +4,5 @@ mysql-connector-python
 sqlalchemy
 # aiomysql
 python-decouple
+packaging
+pymysql

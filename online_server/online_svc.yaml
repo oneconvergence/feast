@@ -15,4 +15,12 @@ spec:
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081
-        
+        env:
+        - name: DKUBE_ACCESS_URL
+          value: http://dkube-controller-master.dkube:5000
+        - name: DKUBE_USER
+          value: ocdkube
+        - name: OFFLINE_DATASET
+          value: offline-dataset
+        - name: DKUBE_DATASET
+          value: online-dataset

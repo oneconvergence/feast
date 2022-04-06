@@ -25,7 +25,7 @@ def get_offline_store_conf(offline_user=None):
         USER = offline_user
     else:
         if os.getenv("DKUBE_USER"):
-            USER = offline_user
+            USER = os.getenv("DKUBE_USER")
         else:
             sys.exit("Please specify dkube user name in DKUBE_USER "
                     "environment variable.")
@@ -88,7 +88,7 @@ def get_mysql_url(_connect_args=None):
         _connect_args = get_offline_store_conf()
     return f"""mysql+pymysql://{_connect_args['user']}:{
         _connect_args['password']}@{_connect_args['host']}:{
-        _connect_args['port']}/{_connect_args['database']}"""
+        _connect_args['port']}/{_connect_args['db']}"""
 
 
 def get_offline_connection_str():

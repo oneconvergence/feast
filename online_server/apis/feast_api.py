@@ -18,6 +18,7 @@ def ping():
 async def materialize(materialize_input: Materialize) -> None:
     try:
         mysql_driver.materialize(
+            materialize_input.project,
             materialize_input.start_date,
             materialize_input.end_date,
             materialize_input.feature_views,
@@ -32,6 +33,7 @@ async def materialize(materialize_input: Materialize) -> None:
 async def materialize_incremental(materialize_input: MaterializeIncremental) -> None:
     try:
         mysql_driver.materialize_incremental(
+            materialize_input.project,
             materialize_input.end_date,
             materialize_input.feature_views,
         )
@@ -58,7 +60,7 @@ async def update_infra(infra_input: InfraUpdate) -> None:
         return fastapi.Response(content=str(ex), status_code=500)
 
 
-@router.post("/api/v1/teardown", name="teardown", status_code=201)
+@router.delete("/api/v1/teardown", name="teardown", status_code=200)
 async def teardown_infra(infra_delete: InfraDelete) -> None:
     try:
         mysql_driver.teardown(infra_delete.tables, infra_delete.entities)

@@ -10,16 +10,23 @@ from common.utils.utils import get_repo_path
 
 
 def materialize(
-    start_date: datetime, end_date: datetime, feature_views: Optional[List[str]] = None
+    project:str,
+    start_date: datetime,
+    end_date: datetime,
+    feature_views: Optional[List[str]] = None
 ) -> None:
     fs = FeatureStore(repo_path=get_repo_path())
+    fs.project = project
     fs.materialize(start_date, end_date, feature_views)
 
 
 def materialize_incremental(
-    end_date: datetime, feature_views: Optional[List[str]] = None
+    project:str,
+    end_date: datetime,
+    feature_views: Optional[List[str]] = None
 ) -> None:
     fs = FeatureStore(repo_path=get_repo_path())
+    fs.project = project
     fs.materialize_incremental(end_date, feature_views)
 
 
