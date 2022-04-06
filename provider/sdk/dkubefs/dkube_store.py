@@ -99,7 +99,7 @@ class DkubeOnlineStore(OnlineStore):
     ) -> None:
         self.initialize(config)
         self.driver["remote"].call_materialize(
-            start_date, end_date, feature_views
+            config.project, start_date, end_date, feature_views
         )
 
     def process_materialize_incremental(
@@ -110,5 +110,5 @@ class DkubeOnlineStore(OnlineStore):
     ) -> None:
         self.initialize(config)
         self.driver["remote"].call_materialize_incremental(
-            end_date, feature_views
+            config.project, end_date, feature_views
         )

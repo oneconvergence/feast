@@ -25,7 +25,7 @@ def get_offline_store_conf(offline_user=None):
         USER = offline_user
     else:
         if os.getenv("DKUBE_USER"):
-            USER = offline_user
+            USER = os.getenv("DKUBE_USER")
         else:
             sys.exit("Please specify dkube user name in DKUBE_USER "
                     "environment variable.")

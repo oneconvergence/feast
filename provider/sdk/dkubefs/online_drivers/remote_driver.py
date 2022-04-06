@@ -23,8 +23,9 @@ class OnlineRemoteDriver:
         if not self.online_server_client:
             self.dkube_server = get_dkube_server_config()
             self.online_server_client = OnlineServerClient(
-                dkube_ip=self.dkube_server["host"],
-                dkube_port=self.dkube_server["port"],
+                # dkube_ip=self.dkube_server["host"],
+                # dkube_port=self.dkube_server["port"],
+                dkube_url=self.dkube_server,
                 token="",
                 dkube_endpoint=False
             )
@@ -195,15 +196,17 @@ class OnlineRemoteDriver:
             "project": project,
             "tables": tables_to_teardown
         }
-        self.online_server_client.post("api/v1/teardown", data=teardown_data)
+        self.online_server_client.delete("api/v1/teardown", data=teardown_data)
 
     def call_materialize(
         self,
+        project: str,
         start_date: datetime,
         end_date: datetime,
         feature_views:Optional[List[str]] = None
     ) -> None:
         materialize_data = {
+            "project": project,
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
             "feature_views": feature_views
@@ -212,10 +215,12 @@ class OnlineRemoteDriver:
 
     def call_materialize_incremental(
         self,
+        project: str,
         end_date: datetime,
         feature_views:Optional[List[str]] = None
     ) -> None:
         materialize_data = {
+            "project": project,
             "end_date": end_date.isoformat(),
             "feature_views": feature_views
         }

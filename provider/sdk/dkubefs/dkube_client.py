@@ -17,7 +17,7 @@ class DkubeClient(object):
     def api_endpoint(self, endpoint):
         if not self.dkube_endpoint:
             if self.dkube_url:
-                return self.dkube_url
+                return f"{self.dkube_url}/{endpoint}"
             return f"http://{self.dkube_ip}:{self.dkube_port}/{endpoint}"
         return f"https://{self.dkube_ip}:{self.dkube_port}/dkube/v2/controller/{endpoint}"
 
