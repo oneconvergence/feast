@@ -1,8 +1,19 @@
 diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
-index 9655c5d1..6e39a425 100644
+index 9655c5d1..1db3dbd5 100644
 --- a/sdk/python/feast/feature_store.py
 +++ b/sdk/python/feast/feature_store.py
-@@ -511,6 +511,38 @@ class FeatureStore:
+@@ -122,6 +122,10 @@ class FeatureStore:
+         """Gets the project of this feature store."""
+         return self.config.project
+ 
++    @project.setter
++    def project(self, project:str) -> None:
++        self.config.project = project
++
+     def _get_provider(self) -> Provider:
+         # TODO: Bake self.repo_path into self.config so that we dont only have one interface to paths
+         return self._provider
+@@ -511,6 +515,38 @@ class FeatureStore:
                  table, project=self.project, commit=False
              )
  
@@ -41,7 +52,7 @@ index 9655c5d1..6e39a425 100644
          if not partial:
              # Delete all registry objects that should not exist.
              entities_to_delete = [
-@@ -557,6 +589,39 @@ class FeatureStore:
+@@ -557,6 +593,39 @@ class FeatureStore:
                      table.name, project=self.project, commit=False
                  )
  
@@ -81,7 +92,7 @@ index 9655c5d1..6e39a425 100644
          self._get_provider().update_infra(
              project=self.project,
              tables_to_delete=views_to_delete + tables_to_delete if not partial else [],
-@@ -566,7 +631,11 @@ class FeatureStore:
+@@ -566,7 +635,11 @@ class FeatureStore:
              partial=partial,
          )
  
@@ -94,7 +105,7 @@ index 9655c5d1..6e39a425 100644
  
      @log_exceptions_and_usage
      def teardown(self):
-@@ -581,7 +650,7 @@ class FeatureStore:
+@@ -581,7 +654,7 @@ class FeatureStore:
          entities = self.list_entities()
  
          self._get_provider().teardown_infra(self.project, tables, entities)
@@ -104,7 +115,7 @@ index 9655c5d1..6e39a425 100644
      @log_exceptions_and_usage
      def get_historical_features(
 diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
-index 8cb646f6..6e5da6b5 100644
+index 8cb646f6..5ea26b89 100644
 --- a/sdk/python/feast/registry.py
 +++ b/sdk/python/feast/registry.py
 @@ -14,7 +14,7 @@
@@ -116,8 +127,12 @@ index 8cb646f6..6e5da6b5 100644
  from urllib.parse import urlparse
  
  from google.protobuf.internal.containers import RepeatedCompositeFieldContainer
-@@ -119,7 +119,10 @@ class Registry:
-     def _initialize_registry(self):
+@@ -116,10 +116,13 @@ class Registry:
+             else 0
+         )
+ 
+-    def _initialize_registry(self):
++    def _initialize_registry(self, project=None):
          """Explicitly initializes the registry with an empty proto if it doesn't exist."""
          try:
 -            self._get_registry_proto()
@@ -449,3 +464,20 @@ index a4ead6d0..b9e32b02 100644
      sys.dont_write_bytecode = True
      repo = parse_repo(repo_path)
  
+diff --git a/sdk/python/setup.py b/sdk/python/setup.py
+index a9fdfa82..30e82a75 100644
+--- a/sdk/python/setup.py
++++ b/sdk/python/setup.py
+@@ -46,8 +46,10 @@ REQUIRED = [
+     "fastavro>=1.1.0",
+     "google-api-core>=1.23.0",
+     "googleapis-common-protos==1.52.*",
+-    "grpcio>=1.34.0",
+-    "grpcio-reflection>=1.34.0",
++    # "grpcio>=1.34.0",
++    "grpcio==1.44.0",
++    # "grpcio-reflection>=1.34.0",
++    "grpcio-reflection==1.44.0",
+     "Jinja2>=2.0.0",
+     "jsonschema",
+     "mmh3",
