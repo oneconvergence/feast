@@ -19,4 +19,13 @@
         export PYTHONPATH=$BASE:$PYTHONPATH
         export PYTHONPATH=$BASE/provider/sdk/:$PYTHONPATH
 
+- Set these environment variables:
+
+        export DKUBE_ACCESS_URL=<Dkube access url>
+        export DKUBE_ACCESS_TOKEN=<Dkube access token>
+        export DKUBE_USER=<Dkube user name>
+        export OFFLINE_DATASET=<Dataset for offline store>
+        export DKUBE_DATASET=<Dataset for Dkube online store>
+        export FEAST_ONLINE_SERVER_URL=<URL to access Feast Knative service>
+
 - That's it.
