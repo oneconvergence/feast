@@ -13,7 +13,7 @@ from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
 from provider.sdk.dkubefs.online_drivers.online_server_client import \
     OnlineServerClient
-from provider.sdk.dkubefs.utils import get_dkube_server_config
+from provider.sdk.dkubefs.utils import get_dkube_server_config, get_dkube_server_host
 
 
 class OnlineRemoteDriver:
@@ -29,6 +29,7 @@ class OnlineRemoteDriver:
                 token="",
                 dkube_endpoint=False
             )
+            self.online_server_host = get_dkube_server_host()
 
     def online_write_batch(
         self,
@@ -179,7 +180,9 @@ class OnlineRemoteDriver:
             entities_to_keep=keep_entities_names,
             entities_to_delete=delete_entities_names
             )
-        self.online_server_client.post("api/v1/infra_update", data=tables_data)
+        self.online_server_client.post("api/v1/infra_update",
+                                       data=tables_data,
+                                       headers=self.online_server_host)
 
     def teardown(
         self,
@@ -196,7 +199,9 @@ class OnlineRemoteDriver:
             "project": project,
             "tables": tables_to_teardown
         }
-        self.online_server_client.delete("api/v1/teardown", data=teardown_data)
+        self.online_server_client.delete("api/v1/teardown",
+                                         data=teardown_data,
+                                         headers=self.online_server_host)
 
     def call_materialize(
         self,
@@ -211,7 +216,9 @@ class OnlineRemoteDriver:
             "end_date": end_date.isoformat(),
             "feature_views": feature_views
         }
-        self.online_server_client.post("api/v1/materialize", data=materialize_data)
+        self.online_server_client.post("api/v1/materialize",
+                                       data=materialize_data,
+                                       headers=self.online_server_host)
 
     def call_materialize_incremental(
         self,
@@ -224,7 +231,9 @@ class OnlineRemoteDriver:
             "end_date": end_date.isoformat(),
             "feature_views": feature_views
         }
-        self.online_server_client.post("api/v1/materialize_incr", data=materialize_data)
+        self.online_server_client.post("api/v1/materialize_incr",
+                                       data=materialize_data,
+                                       headers=self.online_server_host)
 
 
 def _to_naive_utc(ts: datetime):

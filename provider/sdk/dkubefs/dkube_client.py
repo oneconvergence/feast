@@ -27,7 +27,7 @@ class DkubeClient(object):
         }
         if self.dkube_endpoint:
             dkube_headers.update(Authorization=f"Bearer {self.token}")
-        if headers and isinstance(dict, headers):
+        if headers and isinstance(headers, dict):
             dkube_headers.update(headers)
         return dkube_headers
 

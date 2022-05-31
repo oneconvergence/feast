@@ -10,10 +10,10 @@ dconfig = AutoConfig(search_path=str(Path.home()))
 
 def get_dkube_client():
     reg_conf = get_registry_config()
-    DKUBE_URL = os.getenv("DKUBE_ACCESS_URL", reg_conf["url"])
+    DKUBE_URL = os.getenv("DKUBE_URL", reg_conf["url"])
     if not DKUBE_URL:
         sys.exit("Dkube access url not set.")
-    DKUBE_TOKEN = os.getenv("DKUBE_ACCESS_TOKEN", reg_conf["token"])
+    DKUBE_TOKEN = os.getenv("DKUBE_USER_ACCESS_TOKEN", reg_conf["token"])
     if not DKUBE_TOKEN:
         sys.exit("Dkube access token not set.")
     dkube = DkubeApi(URL=DKUBE_URL, token=DKUBE_TOKEN)
@@ -24,10 +24,10 @@ def get_offline_store_conf(offline_user=None):
     if offline_user:
         USER = offline_user
     else:
-        if os.getenv("DKUBE_USER"):
-            USER = os.getenv("DKUBE_USER")
+        if os.getenv("DKUBE_USER_LOGIN_NAME"):
+            USER = os.getenv("DKUBE_USER_LOGIN_NAME")
         else:
-            sys.exit("Please specify dkube user name in DKUBE_USER "
+            sys.exit("Please specify dkube user name in DKUBE_USER_LOGIN_NAME "
                     "environment variable.")
     offline_ds = os.getenv("OFFLINE_DATASET",
                            dconfig("OFFLINE_DATASET", default=None)
@@ -105,7 +105,18 @@ def get_dkube_server_config():
     elif dconfig("FEAST_ONLINE_SERVER_URL", default=None):
         return dconfig("FEAST_ONLINE_SERVER_URL", default=None)
     else:
-        sys.exit("FEAST_ONLINE_SERVER_URL not configured.")
+        print("Using default server config.")
+        return "http://knative-local-gateway.istio-system.svc.cluster.local"
+
+
+def get_dkube_server_host():
+    feast_ol_url = os.getenv("FEAST_ONLINE_SERVER_HOST")
+    if feast_ol_url:
+        return feast_ol_url
+    else:
+        return {
+            "Host": "feast-online-server.default.svc"
+        }
 
 
 def get_dkube_db_config():
@@ -125,15 +136,15 @@ def get_dkube_db_config():
 
 
 def get_registry_config():
-    dkube_url = os.getenv("DKUBE_ACCESS_URL",
-                          dconfig("DKUBE_ACCESS_URL", default=None))
+    dkube_url = os.getenv("DKUBE_URL",
+                          dconfig("DKUBE_URL", default=None))
     if not dkube_url:
-        sys.exit("DKUBE_ACCESS_URL not set.")
+        sys.exit("DKUBE_URL not set.")
 
-    dkube_token = os.getenv("DKUBE_ACCESS_TOKEN",
-                            dconfig("DKUBE_ACCESS_TOKEN", default=None))
+    dkube_token = os.getenv("DKUBE_USER_ACCESS_TOKEN",
+                            dconfig("DKUBE_USER_ACCESS_TOKEN", default=None))
     if not dkube_token:
-        sys.exit("DKUBE_ACCESS_TOKEN not set.")
+        sys.exit("DKUBE_USER_ACCESS_TOKEN not set.")
 
     return {
         "url": dkube_url,
