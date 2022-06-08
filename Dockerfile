@@ -18,6 +18,8 @@ RUN pip install --no-cache-dir -r ./online_server/requirements.txt
 
 RUN git submodule init && git submodule update
 
+COPY setup.py ./feast/sdk/python/setup.py
+
 RUN cd ./feast/ && patch -p1 < ../feast_ol_server.patch && make install-python
 
 RUN pip3 install git+https://github.com/oneconvergence/dkube.git@feast_changes --upgrade

@@ -184,7 +184,6 @@ def _upload_entity_df_into_mysql_and_get_entity_schema(
     """
     table_id = offline_utils.get_temp_entity_table_name()
     offline_config = config.offline_store
-    # _connect_args = get_mysql_connect_args(offline_config.connection_str)
     _connect_args = get_mysql_connect_args()
     _mysql_url = get_mysql_url(_connect_args)
     engine = create_engine(_mysql_url)

@@ -83,12 +83,19 @@ def get_mysql_connect_args(connection_str=None):
     conf.update(autocommit=True)
     return conf
 
+
 def get_mysql_url(_connect_args=None):
     if not _connect_args:
         _connect_args = get_offline_store_conf()
+    if 'db' in _connect_args:
+        db = _connect_args['db']
+    elif 'database' in _connect_args:
+        db = _connect_args['database']
+    else:
+        sys.exit("database detail not found in connection")
     return f"""mysql+pymysql://{_connect_args['user']}:{
         _connect_args['password']}@{_connect_args['host']}:{
-        _connect_args['port']}/{_connect_args['database']}"""
+        _connect_args['port']}/{db}"""
 
 
 def get_offline_connection_str():
@@ -131,7 +138,8 @@ def get_dkube_db_config():
         "port": ods["datum"]["sql"]["port"],
         "user": ods["datum"]["sql"]["username"],
         "password": ods["datum"]["sql"]["password"],
-        "db": ods["datum"]["sql"]["database"]
+        "db": ods["datum"]["sql"]["database"],
+        "autocommit": True
     }
 
 
