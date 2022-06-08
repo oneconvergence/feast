@@ -35,7 +35,13 @@ class OnlineLocalDriver:
         if any_val_unset:
             sys.exit("Config missing for feast store. Please contact administrator.")
         self.connect_args.update(
-            host=host, port=port, user=user, password=password, database=database)
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            database=database,
+            auth_plugin='mysql_native_password'
+        )
 
     def online_write_batch(
         self,
