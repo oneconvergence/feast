@@ -14,7 +14,7 @@ class MysqlConfig(metaclass=Base):
                 "host": online_store["host"],
                 "port": online_store["port"],
                 "user": online_store["user"],
-                "password": online_store["secret"],
+                "password": online_store["password"],
                 "database": online_store["db"],
                 "autocommit": True,
             }

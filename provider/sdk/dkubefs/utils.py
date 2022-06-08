@@ -130,7 +130,7 @@ def get_dkube_db_config():
         "host": ods["datum"]["sql"]["host"],
         "port": ods["datum"]["sql"]["port"],
         "user": ods["datum"]["sql"]["username"],
-        "secret": ods["datum"]["sql"]["password"],
+        "password": ods["datum"]["sql"]["password"],
         "db": ods["datum"]["sql"]["database"]
     }
 
