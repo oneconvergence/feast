@@ -126,10 +126,11 @@ def get_dkube_server_host():
 
 
 def get_dkube_db_config():
-    dds = os.getenv("DKUBE_DATASET",
-                    dconfig("DKUBE_DATASET", default=None))
+    dds = os.getenv("ONLINE_DATASET",
+                    dconfig("ONLINE_DATASET", default=None))
     if not dds:
-        sys.exit("Dkube dataset not found. Please contact administrator.")
+        print("online dataset not found. using default: online-dataset")
+        dds = "online-dataset"
     dclient = get_dkube_client()
     ods = dclient.get_dataset("ocdkube", dds)
     return {
