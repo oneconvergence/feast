@@ -1,5 +1,5 @@
 python-decouple
-mysql-connector
+mysql-connector-python
 sqlalchemy
 ipaddress
 pymysql
