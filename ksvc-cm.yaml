@@ -6,4 +6,4 @@ data:
   DKUBE_URL: https://dkube-proxy.dkube:443
   DKUBE_USER_ACCESS_TOKEN: token
   DKUBE_USER_LOGIN_NAME: ocdkube
-  DKUBE_DATASET: online-dataset
+  ONLINE_DATASET: online-dataset
