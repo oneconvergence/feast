@@ -6,3 +6,4 @@ sqlalchemy
 python-decouple
 packaging
 pymysql
+git+https://github.com/oneconvergence/dkube.git@feast_changes
