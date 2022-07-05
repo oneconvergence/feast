@@ -20,45 +20,28 @@ def get_dkube_client():
     return dkube
 
 
-def get_offline_store_conf(offline_user=None):
+def get_offline_store_conf(offline_user=None, offline_dataset=None):
     if offline_user:
         USER = offline_user
     else:
-        if os.getenv("DKUBE_USER_LOGIN_NAME"):
-            USER = os.getenv("DKUBE_USER_LOGIN_NAME")
-        else:
-            sys.exit("Please specify dkube user name in DKUBE_USER_LOGIN_NAME "
-                    "environment variable.")
-    offline_ds = os.getenv("OFFLINE_DATASET",
-                           dconfig("OFFLINE_DATASET", default=None)
-                           )
-    if offline_ds:
-        dclient = get_dkube_client()
-        ods = dclient.get_dataset(USER, offline_ds)
-        return {
-            "user": ods["datum"]["sql"]["username"],
-            "host": ods["datum"]["sql"]["host"],
-            "port": ods["datum"]["sql"]["port"],
-            "password": ods["datum"]["sql"]["password"],
-            "db": ods["datum"]["sql"]["database"]
-        }
-    # Notes(VK): We can get away with this.
-    host = dconfig("OFFLINE_HOST", default=None)
-    user = dconfig("OFFLINE_USER", default=None)
-    port = dconfig("OFFLINE_PORT", default=None)
-    password = dconfig("OFFLINE_SECRET", default=None)
-    db = dconfig("OFFLINE_DB", default=None)
-    if not all([host, user, port, password, db]):
-        sys.exit("Offline server details not found. Please "
-                 "specify OFFLINE_DATASET in env variable or"
-                 "offline server details individually in .env"
-                 "file.")
+        USER = os.getenv("DKUBE_USER_LOGIN_NAME")
+        if not USER:
+            raise Exception("dkube user login name not specified.")
+    if offline_dataset:
+        offline_ds = offline_dataset
+    else:
+        offline_ds = os.getenv("OFFLINE_DATASET")
+        if not offline_ds:
+            raise Exception("offline dataset information not specified.")
+
+    dclient = get_dkube_client()
+    ods = dclient.get_dataset(USER, offline_ds)
     return {
-        "user": user,
-        "host": host,
-        "port": port,
-        "password": password,
-        "db": db
+        "user": ods["datum"]["sql"]["username"],
+        "host": ods["datum"]["sql"]["host"],
+        "port": ods["datum"]["sql"]["port"],
+        "password": ods["datum"]["sql"]["password"],
+        "db": ods["datum"]["sql"]["database"]
     }
 
 
@@ -84,22 +67,8 @@ def get_mysql_connect_args(connection_str=None):
     return conf
 
 
-def get_mysql_url(_connect_args=None):
-    if not _connect_args:
-        _connect_args = get_offline_store_conf()
-    if 'db' in _connect_args:
-        db = _connect_args['db']
-    elif 'database' in _connect_args:
-        db = _connect_args['database']
-    else:
-        sys.exit("database detail not found in connection")
-    return f"""mysql+pymysql://{_connect_args['user']}:{
-        _connect_args['password']}@{_connect_args['host']}:{
-        _connect_args['port']}/{db}"""
-
-
-def get_offline_connection_str():
-    offline_conf = get_offline_store_conf()
+def get_offline_connection_str(user=None, offline_dataset=None):
+    offline_conf = get_offline_store_conf(user, offline_dataset)
     return f"""{offline_conf['host']}:{offline_conf['port']}:
             {offline_conf['user']}@{offline_conf['password']}:
             {offline_conf['db']}"""
@@ -126,22 +95,38 @@ def get_dkube_server_host():
         }
 
 
-def get_dkube_db_config():
-    # REVISIT
+def get_mysql_url(_connect_args=None, user=None, offline_dataset=None):
+    if not _connect_args:
+        if user and offline_dataset:
+            _connect_args = get_offline_store_conf(user, offline_dataset)
+        else:
+            raise Exception("MYSQL url cannot be retreived.")
+    if 'db' in _connect_args:
+        db = _connect_args['db']
+    elif 'database' in _connect_args:
+        db = _connect_args['database']
+    else:
+        sys.exit("db or database not set")
+    return f"""mysql+pymysql://{_connect_args['user']}:{
+        _connect_args['password']}@{_connect_args['host']}:{
+        _connect_args['port']}/{db}"""
+
+
+def get_dkube_db_config(user):
     dds = os.getenv("ONLINE_DATASET",
                     dconfig("ONLINE_DATASET", default=None))
     if not dds:
+        print("online dataset not found. using default: online-dataset")
         dds = "online-dataset"
         print("using default dataset: online-dataset")
     dclient = get_dkube_client()
-    ods = dclient.get_dataset("ocdkube", dds)
+    ods = dclient.get_dataset(user, dds)
     return {
         "host": ods["datum"]["sql"]["host"],
         "port": ods["datum"]["sql"]["port"],
         "user": ods["datum"]["sql"]["username"],
         "password": ods["datum"]["sql"]["password"],
-        "db": ods["datum"]["sql"]["database"],
-        "autocommit": True
+        "db": ods["datum"]["sql"]["database"]
     }
 
 

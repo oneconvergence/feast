@@ -13,21 +13,29 @@ def materialize(
     project:str,
     start_date: datetime,
     end_date: datetime,
-    feature_views: Optional[List[str]] = None
+    feature_views: Optional[List[str]] = None,
+    user: Optional[str] = None,
+    offline_dataset: Optional[str] = None
 ) -> None:
     fs = FeatureStore(repo_path=get_repo_path())
     fs.project = project
-    fs.materialize(start_date, end_date, feature_views)
+    fs.user = user
+    fs.offline_dataset = offline_dataset
+    fs.materialize(start_date, end_date, feature_views, user, offline_dataset)
 
 
 def materialize_incremental(
     project:str,
     end_date: datetime,
-    feature_views: Optional[List[str]] = None
+    feature_views: Optional[List[str]] = None,
+    user: Optional[str] = None,
+    offline_dataset: Optional[str] = None
 ) -> None:
     fs = FeatureStore(repo_path=get_repo_path())
     fs.project = project
-    fs.materialize_incremental(end_date, feature_views)
+    fs.user = user
+    fs.offline_dataset = offline_dataset
+    fs.materialize_incremental(end_date, feature_views, user, offline_dataset)
 
 
 def infra_update(
@@ -36,8 +44,10 @@ def infra_update(
     tables_to_delete: Sequence[str],
     entities_to_keep: Optional[Sequence[str]],
     entities_to_delete: Optional[Sequence[str]],
+    user: Optional[str],
+    offline_dataset: Optional[str] = None
 ):
-    with connect(**MysqlConfig()._CONFIG) as conn:
+    with connect(**MysqlConfig(user)._CONFIG) as conn:
         with conn.cursor(buffered=True) as cursor:
             for table in tables_to_keep:
                 _create_query = f"""
@@ -53,7 +63,7 @@ def infra_update(
                 """
                 # cursor.execute(_index_query)
 
-    with connect(**MysqlConfig()._CONFIG) as conn:
+    with connect(**MysqlConfig(user)._CONFIG) as conn:
         with conn.cursor(buffered=True) as cursor:
             for table in tables_to_delete:
                 _drop_index = f"""
@@ -66,8 +76,12 @@ def infra_update(
                 cursor.execute(_drop_table)
 
 
-def teardown(tables: Sequence[str], entities: Optional[Sequence[str]] = None) -> None:
-    with connect(**MysqlConfig()._CONFIG) as conn:
+def teardown(
+    tables: Sequence[str],
+    entities: Optional[Sequence[str]] = None,
+    user: Optional[str] = None
+    ) -> None:
+    with connect(**MysqlConfig(user)._CONFIG) as conn:
         with conn.cursor(buffered=True) as cursor:
             for table in tables:
                 _drop_table = f"""

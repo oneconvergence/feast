@@ -31,7 +31,7 @@ class DkubeOnlineStore(OnlineStore):
         if self.online_store_config:
             return
         self.online_store_config = config.online_store
-        self.connect_args = get_dkube_db_config()
+        # self.connect_args = get_dkube_db_config()
 
     def online_write_batch(
         self,
@@ -46,6 +46,7 @@ class DkubeOnlineStore(OnlineStore):
             ]
         ],
         progress: Optional[Callable[[int], Any]],
+        user
     ) -> None:
         self.initialize(config)
         project = config.project
@@ -57,6 +58,7 @@ class DkubeOnlineStore(OnlineStore):
 
             for feature_name, val in values.items():
                 self.insert_into_table(
+                    user,
                     project,
                     table,
                     entity_key_bin,
@@ -70,6 +72,7 @@ class DkubeOnlineStore(OnlineStore):
 
     def insert_into_table(
         self,
+        user,
         project,
         table,
         entity_key_bin,
@@ -78,6 +81,7 @@ class DkubeOnlineStore(OnlineStore):
         created_ts,
         val,
     ):
+        self.connect_args = get_dkube_db_config(user)
         with connect(**self.connect_args) as conn:
             with conn.cursor(buffered=True) as cursor:
                 _update_query = f"""

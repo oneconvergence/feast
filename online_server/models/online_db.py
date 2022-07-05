@@ -8,12 +8,16 @@ class Materialize(BaseModel):
     start_date: datetime
     end_date: datetime
     feature_views: Optional[List[str]]
+    user: Optional[str]
+    offline_dataset: Optional[str]
 
 
 class MaterializeIncremental(BaseModel):
     project: str
     end_date: datetime
     feature_views: Optional[List[str]]
+    user: Optional[str]
+    offline_dataset: Optional[str]
 
 
 class InfraUpdate(BaseModel):
@@ -22,9 +26,13 @@ class InfraUpdate(BaseModel):
     tables_to_keep: Sequence[str]
     entities_to_keep: Optional[Sequence[str]] = []
     entities_to_delete: Optional[Sequence[str]] = []
+    user: Optional[str]
+    offline_dataset: Optional[str]
 
 
 class InfraDelete(BaseModel):
     project: str
     tables: Sequence[str]
     entities: Optional[Sequence[str]] = None
+    user: Optional[str]
+    offline_dataset: Optional[str]

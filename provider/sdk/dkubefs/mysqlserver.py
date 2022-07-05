@@ -51,6 +51,8 @@ class MySQLOfflineStore(OfflineStore):
         created_timestamp_column: Optional[str],
         start_date: datetime,
         end_date: datetime,
+        user: Optional[str] = None,
+        offline_dataset: Optional[str] = None
     ) -> RetrievalJob:
         assert type(data_source).__name__ == "MySQLServerSource"
         assert config.offline_store.type == (
@@ -100,6 +102,8 @@ class MySQLOfflineStore(OfflineStore):
             config=config,
             full_feature_names=False,
             on_demand_feature_views=None,
+            user=user,
+            offline_dataset=offline_dataset
         )
 
     # REVISIT(VK): We may need to revisit this.
@@ -300,14 +304,15 @@ class MySQLRetrievalJob(RetrievalJob):
         full_feature_names: bool,
         on_demand_feature_views: Optional[List[OnDemandFeatureView]],
         drop_columns: Optional[List[str]] = None,
+        user: Optional[str] = None,
+        offline_dataset: Optional[str] = None
     ):
         self.query = query
         self._config = config
         self._full_feature_names = full_feature_names
         self._on_demand_feature_views = on_demand_feature_views
         self._drop_columns = drop_columns
-        self._connect_args = get_mysql_connect_args()
-        _mysql_url = get_mysql_url(self._connect_args)
+        _mysql_url = get_mysql_url(user=user, offline_dataset=offline_dataset)
         self.engine = create_engine(_mysql_url)
 
     @property

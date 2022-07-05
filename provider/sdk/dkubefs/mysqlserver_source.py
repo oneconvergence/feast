@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 
 import pandas as pd
@@ -63,8 +64,10 @@ class MySQLServerSource(DataSource):
         created_timestamp_column: Optional[str] = "",
         field_mapping: Optional[Dict[str, str]] = None,
         date_partition_column: Optional[str] = "",
+        **kwargs
     ):
-        connection_str = get_offline_connection_str()
+        user, offline_dataset = self.get_user_and_dataset_from_project(kwargs.get('project'))
+        connection_str = get_offline_connection_str(user=user, offline_dataset=offline_dataset)
         self._mysql_options = MySQLOptions(connection_str, table_ref)
         self._connection_str = connection_str
         self._table_ref = table_ref
@@ -106,7 +109,7 @@ class MySQLServerSource(DataSource):
         self._mysql_options = _options
 
     @staticmethod
-    def from_proto(data_source: DataSourceProto) -> Any:
+    def from_proto(data_source: DataSourceProto, **kwargs) -> Any:
         options = json.loads(data_source.custom_options.configuration)
         return MySQLServerSource(
             field_mapping=dict(data_source.field_mapping),
@@ -114,6 +117,7 @@ class MySQLServerSource(DataSource):
             event_timestamp_column=data_source.event_timestamp_column,
             created_timestamp_column=data_source.created_timestamp_column,
             date_partition_column=data_source.date_partition_column,
+            **kwargs
         )
 
     def to_proto(self) -> DataSourceProto:
@@ -132,6 +136,13 @@ class MySQLServerSource(DataSource):
     def validate(self, config: RepoConfig):
         # REVISIT(VK)
         return None
+
+    def get_user_and_dataset_from_project(self, project:str):
+        prj_val = os.getenv(project)
+        if not prj_val:
+            raise Exception("project value not set.")
+        user, offline_dataset = prj_val.split("_")
+        return user, offline_dataset
 
     @staticmethod
     def source_datatype_to_feast_value_type() -> Callable[[str], ValueType]:
