@@ -41,7 +41,8 @@ def get_offline_store_conf(offline_user=None, offline_dataset=None):
         "host": ods["datum"]["sql"]["host"],
         "port": ods["datum"]["sql"]["port"],
         "password": ods["datum"]["sql"]["password"],
-        "db": ods["datum"]["sql"]["database"]
+        "db": ods["datum"]["sql"]["database"],
+        "autocommit": True,
     }
 
 
@@ -126,7 +127,8 @@ def get_dkube_db_config(user):
         "port": ods["datum"]["sql"]["port"],
         "user": ods["datum"]["sql"]["username"],
         "password": ods["datum"]["sql"]["password"],
-        "db": ods["datum"]["sql"]["database"]
+        "db": ods["datum"]["sql"]["database"],
+        "autocommit": True
     }
 
 
