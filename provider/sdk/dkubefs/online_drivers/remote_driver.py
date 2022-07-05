@@ -13,7 +13,8 @@ from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
 from provider.sdk.dkubefs.online_drivers.online_server_client import \
     OnlineServerClient
-from provider.sdk.dkubefs.utils import get_dkube_server_config, get_dkube_server_host
+from provider.sdk.dkubefs.utils import get_dkube_server_config, get_dkube_server_host, \
+    get_user, get_offline_dataset
 
 
 class OnlineRemoteDriver:
@@ -30,6 +31,8 @@ class OnlineRemoteDriver:
                 dkube_endpoint=False
             )
             self.online_server_host = get_dkube_server_host()
+            self.user = get_user()
+            self.offline_dataset = get_offline_dataset()
 
     def online_write_batch(
         self,
@@ -178,7 +181,9 @@ class OnlineRemoteDriver:
             tables_to_delete=delete_tables_names,
             tables_to_keep=keep_tables_names,
             entities_to_keep=keep_entities_names,
-            entities_to_delete=delete_entities_names
+            entities_to_delete=delete_entities_names,
+            user=self.user,
+            offline_dataset=self.offline_dataset
             )
         self.online_server_client.post("api/v1/infra_update",
                                        data=tables_data,
@@ -197,7 +202,9 @@ class OnlineRemoteDriver:
         tables_to_teardown = preprocess_teardown_tables(project, tables)
         teardown_data = {
             "project": project,
-            "tables": tables_to_teardown
+            "tables": tables_to_teardown,
+            "user": self.user,
+            "offline_dataset": self.offline_dataset
         }
         self.online_server_client.delete("api/v1/teardown",
                                          data=teardown_data,
@@ -214,7 +221,9 @@ class OnlineRemoteDriver:
             "project": project,
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
-            "feature_views": feature_views
+            "feature_views": feature_views,
+            "user": self.user,
+            "offline_dataset": self.offline_dataset
         }
         self.online_server_client.post("api/v1/materialize",
                                        data=materialize_data,
@@ -229,7 +238,9 @@ class OnlineRemoteDriver:
         materialize_data = {
             "project": project,
             "end_date": end_date.isoformat(),
-            "feature_views": feature_views
+            "feature_views": feature_views,
+            "user": self.user,
+            "offline_dataset": self.offline_dataset
         }
         self.online_server_client.post("api/v1/materialize_incr",
                                        data=materialize_data,

@@ -157,3 +157,17 @@ def get_registry_config():
         "url": dkube_url,
         "token": dkube_token
     }
+
+
+def get_user():
+    user = os.getenv("DKUBE_USER_LOGIN_NAME")
+    if not user:
+        raise Exception("DKUBE_USER_LOGIN_NAME not specified.")
+    return user
+
+
+def get_offline_dataset():
+    offline_ds = os.getenv("OFFLINE_DATASET")
+    if not offline_ds:
+        raise Exception("OFFLINE_DATASET not specified.")
+    return offline_ds
