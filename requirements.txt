@@ -1,0 +1,5 @@
+python-decouple
+mysql-connector-python
+sqlalchemy
+ipaddress
+pymysql
