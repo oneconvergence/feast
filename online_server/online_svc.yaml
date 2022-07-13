@@ -1,0 +1,40 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: feast-online-server
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/target: "10"
+        autoscaling.knative.dev/scaleToZeroPodRetentionPeriod: "30m0s"
+    spec:
+      containers:
+      - image: ocdr/feast-olserver
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+        env:
+        - name: DKUBE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ol-cm
+              key: DKUBE_URL
+        - name: DKUBE_USER_LOGIN_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: ol-cm
+              key: DKUBE_USER_LOGIN_NAME
+        - name: OFFLINE_DATASET
+          valueFrom:
+            configMapKeyRef:
+              name: ol-cm
+              key: OFFLINE_DATASET
+        - name: DKUBE_USER_ACCESS_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              name: ol-cm
+              key: DKUBE_USER_ACCESS_TOKEN
+        - name: ONLINE_DATASET
+          value: online-dataset

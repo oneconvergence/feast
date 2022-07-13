@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ol-cm
+data:
+  DKUBE_URL: https://dkube-proxy.dkube:443
+  DKUBE_USER_ACCESS_TOKEN: token
+  DKUBE_USER_LOGIN_NAME: ocdkube
+  ONLINE_DATASET: online-dataset
