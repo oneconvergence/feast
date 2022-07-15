@@ -8,8 +8,6 @@ urllib3.disable_warnings()
 
 class DkubeClient(object):
     def __init__(self, **kwargs) -> None:
-        self.dkube_ip = kwargs.get("dkube_ip", "192.168.x.y")
-        self.dkube_port = kwargs.get("dkube_port", 32222)
         self.dkube_endpoint = kwargs.get("dkube_endpoint", True)
         self.token = kwargs.get("token", "")
         self.dkube_url = kwargs.get("dkube_url", "")
@@ -18,8 +16,9 @@ class DkubeClient(object):
         if not self.dkube_endpoint:
             if self.dkube_url:
                 return f"{self.dkube_url}/{endpoint}"
-            return f"http://{self.dkube_ip}:{self.dkube_port}/{endpoint}"
-        return f"https://{self.dkube_ip}:{self.dkube_port}/dkube/v2/controller/{endpoint}"
+        raise Exception(f"dkube_url: {self.dkube_url} or endpoint: {endpoint} is missing")
+            # return f"http://{self.dkube_ip}:{self.dkube_port}/{endpoint}"
+        # return f"https://{self.dkube_ip}:{self.dkube_port}/dkube/v2/controller/{endpoint}"
 
     def headers(self, headers=None):
         dkube_headers = {

@@ -2,6 +2,10 @@ from feast.infra.passthrough_provider import PassthroughProvider
 
 
 class DkubeProvider(PassthroughProvider):
-    """
-    (VK): We need to see if we can work with the PassthroughProvider
+    """ DkubeProvider class delegates all the operations to
+        dkube online and dkube offline store.
+
+    Args:
+        PassthroughProvider (type: Provider): passthrough provider
+        class.
     """
