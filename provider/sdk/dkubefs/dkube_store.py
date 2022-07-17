@@ -12,7 +12,7 @@ from feast.repo_config import FeastConfigBaseModel
 # from mysql.connector import connect
 from pydantic import StrictStr
 from pydantic.typing import Literal
-from provider.sdk.dkubefs.online_drivers.local_driver import OnlineLocalDriver
+from provider.sdk.dkubefs.online_drivers.local_driver import LocalDBDriver
 
 from provider.sdk.dkubefs.online_drivers.remote_driver import OnlineRemoteDriver
 
@@ -24,14 +24,19 @@ class DkubeOnlineStoreConfig(FeastConfigBaseModel):
 
 
 class DkubeOnlineStore(OnlineStore):
-    driver: Union[OnlineRemoteDriver, OnlineLocalDriver] = None
+    """ Online store of Dkube Feast provider.
+
+    Args:
+        OnlineStore : Base class of online store.
+    """
+    driver: Union[OnlineRemoteDriver, LocalDBDriver] = None
 
     def initialize(self, config):
         if self.driver:
             return self.driver
         self.driver = {}
         self.driver["remote"] = OnlineRemoteDriver(config)
-        self.driver["local"] = OnlineLocalDriver(config)
+        self.driver["local"] = LocalDBDriver(config)
 
     def online_write_batch(
         self,

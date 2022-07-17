@@ -25,7 +25,9 @@
         export DKUBE_ACCESS_TOKEN=<Dkube access token>
         export DKUBE_USER=<Dkube user name>
         export OFFLINE_DATASET=<Dataset for offline store>
-        export DKUBE_DATASET=<Dataset for Dkube online store>
+        export ONLINE_DATASET=<Dataset for Dkube online store>
         export FEAST_ONLINE_SERVER_URL=<URL to access Feast Knative service>
+
+   Note:- In Dkube environment, only __OFFLINE_DATASET__ needs to be set explicitly by user.
 
 - That's it.

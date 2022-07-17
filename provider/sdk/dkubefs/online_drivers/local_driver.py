@@ -15,7 +15,11 @@ from provider.sdk.dkubefs.utils import get_dkube_db_config
 dconfig = AutoConfig(search_path=str(Path.home()))
 
 
-class OnlineLocalDriver:
+class LocalDBDriver:
+    """ LocalDBDriver class handles batch read of data from
+        MySQL DB. This is the only operation that gets handled
+        by this class.
+    """
     online_store_config = None
     connect_args = None
 

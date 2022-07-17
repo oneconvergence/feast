@@ -18,6 +18,9 @@ from provider.sdk.dkubefs.utils import get_dkube_server_config, get_dkube_server
 
 
 class OnlineRemoteDriver:
+    """ OnlineRemoteDriver proxies online store API calls to Feast Knative
+        service from client SDK.
+    """
     online_server_client: Optional[OnlineServerClient] = None
 
     def __init__(self, config: RepoConfig) -> None:
