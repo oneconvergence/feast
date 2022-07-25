@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 import sys
-from decouple import AutoConfig
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from feast import Entity, FeatureTable, FeatureView, RepoConfig
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
@@ -11,8 +10,6 @@ from mysql.connector import connect
 import pytz
 
 from provider.sdk.dkubefs.utils import get_dkube_db_config
-
-dconfig = AutoConfig(search_path=str(Path.home()))
 
 
 class LocalDBDriver:

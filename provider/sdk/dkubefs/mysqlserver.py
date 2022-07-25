@@ -6,7 +6,6 @@ from typing import Dict, List, Optional, Set, Tuple, Union
 import numpy as np
 import pandas as pd
 import pyarrow
-from decouple import AutoConfig
 from feast import OnDemandFeatureView, errors
 from feast.data_source import DataSource
 from feast.feature_view import DUMMY_ENTITY_ID, DUMMY_ENTITY_VAL, FeatureView
@@ -24,7 +23,6 @@ from provider.sdk.dkubefs.utils import get_mysql_connect_args, \
      get_mysql_url
 
 
-dconfig = AutoConfig(search_path=str(Path.home()))
 EntitySchema = Dict[str, np.dtype]
 
 
