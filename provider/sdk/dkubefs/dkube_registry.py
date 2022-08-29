@@ -1,11 +1,5 @@
-from importlib.abc import Loader
-import os
-import re
-import sys
-import uuid
-import yaml
-
 import base64
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -13,8 +7,6 @@ from feast.protos.feast.core.Registry_pb2 import Registry as RegistryProto
 from feast.registry_store import RegistryStore
 from feast.repo_config import RegistryConfig
 from provider.sdk.dkubefs.utils import get_dkube_client
-
-from dkube.sdk import DkubeApi
 
 
 class DkubeRegistryStore(RegistryStore):
