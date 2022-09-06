@@ -15,14 +15,13 @@ from feast.infra.offline_stores.offline_store import OfflineStore, RetrievalJob
 from feast.infra.provider import _get_requested_feature_views_to_features_dict
 from feast.registry import Registry
 from feast.repo_config import FeastConfigBaseModel, RepoConfig
+from feast.sdk.python.feast.usage import log_exceptions_and_usage
 from mysql.connector import connect
+from provider.sdk.dkubefs.mysqlserver_source import MySQLServerSource
+from provider.sdk.dkubefs.utils import get_mysql_connect_args, get_mysql_url
 from pydantic.types import StrictStr
 from pydantic.typing import Literal
 from sqlalchemy import create_engine
-from provider.sdk.dkubefs.mysqlserver_source import MySQLServerSource
-from provider.sdk.dkubefs.utils import get_mysql_connect_args, \
-     get_mysql_url
-
 
 dconfig = AutoConfig(search_path=str(Path.home()))
 EntitySchema = Dict[str, np.dtype]
@@ -42,12 +41,13 @@ class MySQLOfflineStore(OfflineStore):
         return self.mysql_connect_args
 
     @staticmethod
+    @log_exceptions_and_usage(offline_store="mysql")
     def pull_latest_from_table_or_query(
         config: RepoConfig,
         data_source: DataSource,
         join_key_columns: List[str],
         feature_name_columns: List[str],
-        event_timestamp_column: str,
+        timestamp_field: str,
         created_timestamp_column: Optional[str],
         start_date: datetime,
         end_date: datetime,
@@ -63,7 +63,7 @@ class MySQLOfflineStore(OfflineStore):
         columns_join_string = ", ".join(join_key_columns)
         if columns_join_string != "":
             columns_join_string = "PARTITION BY " + columns_join_string
-        timestamps = [event_timestamp_column]
+        timestamps = [timestamp_field]
         if created_timestamp_column:
             timestamps.append(created_timestamp_column)
 
@@ -90,7 +90,7 @@ class MySQLOfflineStore(OfflineStore):
                 {columns_join_string} ORDER BY {timestamp_desc_string}
                 ) AS _feast_row
                 FROM {from_expression}
-                WHERE {event_timestamp_column}
+                WHERE {timestamp_field}
                 BETWEEN TIMESTAMP '{start_date}' AND TIMESTAMP '{end_date}'
             ) as tt
             WHERE _feast_row = 1
@@ -108,6 +108,7 @@ class MySQLOfflineStore(OfflineStore):
 
     # REVISIT(VK): We may need to revisit this.
     @staticmethod
+    @log_exceptions_and_usage(offline_store="mysql")
     def get_historical_features(
         config: RepoConfig,
         feature_views: List[FeatureView],
@@ -161,6 +162,37 @@ class MySQLOfflineStore(OfflineStore):
             ),
         )
         return job
+
+    @staticmethod
+    @log_exceptions_and_usage(offline_store="mysql")
+    def pull_all_from_table_or_query(
+        config: RepoConfig,
+        data_source: DataSource,
+        join_key_columns: List[str],
+        feature_name_columns: List[str],
+        timestamp_field: str,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> RetrievalJob:
+        """only placeholder in online server
+
+        Args:
+            config (RepoConfig): _description_
+            data_source (DataSource): _description_
+            join_key_columns (List[str]): _description_
+            feature_name_columns (List[str]): _description_
+            timestamp_field (str): _description_
+            start_date (datetime): _description_
+            end_date (datetime): _description_
+
+        Returns:
+            RetrievalJob: _description_
+        """
+        assert type(data_source).__name__ == "MySQLServerSource"
+        assert config.offline_store.type == (
+            "dkubefs.mysqlserver.MySQLOfflineStore"
+        )
+        pass
 
 
 @dataclass(frozen=True)
