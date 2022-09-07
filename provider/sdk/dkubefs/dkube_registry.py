@@ -43,3 +43,9 @@ class DkubeRegistryStore(RegistryStore):
         json_res = self.dkube.validate_project_changes(update_infra)
         if json_res.get('valid') ==  False:
             raise Exception("Invalid registry input.")
+
+    def update_dkube_project(self, project: str):
+        project_id = self.dkube.get_project_id(project)
+        project_data = self.dkube.get_project(project_id)
+        project_data["feastEnabled"] = True
+        self.dkube.update_project(project_id, project_data)
