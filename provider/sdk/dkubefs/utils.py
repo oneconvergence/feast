@@ -1,19 +1,21 @@
 import os
-from pathlib import Path
 import sys
-from decouple import AutoConfig
+from pathlib import Path
 
+from decouple import AutoConfig
 from dkube.sdk import DkubeApi
+from online_server.common.utils.utils import get_user_info
 
 dconfig = AutoConfig(search_path=str(Path.home()))
 
 
-def get_dkube_client():
+def get_dkube_client(token: str):
     reg_conf = get_registry_config()
     DKUBE_URL = os.getenv("DKUBE_URL", reg_conf["url"])
     if not DKUBE_URL:
         sys.exit("Dkube access url not set.")
-    DKUBE_TOKEN = os.getenv("DKUBE_USER_ACCESS_TOKEN", reg_conf["token"])
+    # DKUBE_TOKEN = os.getenv("DKUBE_USER_ACCESS_TOKEN", reg_conf["token"])
+    DKUBE_TOKEN = token
     if not DKUBE_TOKEN:
         sys.exit("Dkube access token not set.")
     dkube = DkubeApi(URL=DKUBE_URL, token=DKUBE_TOKEN)
@@ -34,7 +36,8 @@ def get_offline_store_conf(offline_user=None, offline_dataset=None):
         if not offline_ds:
             raise Exception("offline dataset information not specified.")
 
-    dclient = get_dkube_client()
+    token = get_user_token(USER)
+    dclient = get_dkube_client(token)
     ods = dclient.get_dataset(USER, offline_ds)
     return {
         "user": ods["datum"]["sql"]["username"],
@@ -91,9 +94,7 @@ def get_dkube_server_host():
     if feast_ol_url:
         return feast_ol_url
     else:
-        return {
-            "Host": "feast-online-server.default.svc"
-        }
+        return {"Host": "feast-online-server.default.svc"}
 
 
 def get_mysql_url(_connect_args=None, user=None, offline_dataset=None):
@@ -102,10 +103,10 @@ def get_mysql_url(_connect_args=None, user=None, offline_dataset=None):
             _connect_args = get_offline_store_conf(user, offline_dataset)
         else:
             raise Exception("MYSQL url cannot be retreived.")
-    if 'db' in _connect_args:
-        db = _connect_args['db']
-    elif 'database' in _connect_args:
-        db = _connect_args['database']
+    if "db" in _connect_args:
+        db = _connect_args["db"]
+    elif "database" in _connect_args:
+        db = _connect_args["database"]
     else:
         sys.exit("db or database not set")
     return f"""mysql+pymysql://{_connect_args['user']}:{
@@ -114,13 +115,14 @@ def get_mysql_url(_connect_args=None, user=None, offline_dataset=None):
 
 
 def get_dkube_db_config(user):
-    dds = os.getenv("ONLINE_DATASET",
-                    dconfig("ONLINE_DATASET", default=None))
+    dds = os.getenv("ONLINE_DATASET", dconfig("ONLINE_DATASET", default=None))
     if not dds:
         print("online dataset not found. using default: online-dataset")
         dds = "online-dataset"
         print("using default dataset: online-dataset")
-    dclient = get_dkube_client()
+
+    token = get_user_token(user)
+    dclient = get_dkube_client(token)
     ods = dclient.get_dataset(user, dds)
     return {
         "host": ods["datum"]["sql"]["host"],
@@ -128,22 +130,29 @@ def get_dkube_db_config(user):
         "user": ods["datum"]["sql"]["username"],
         "password": ods["datum"]["sql"]["password"],
         "db": ods["datum"]["sql"]["database"],
-        "autocommit": True
+        "autocommit": True,
     }
 
 
 def get_registry_config():
-    dkube_url = os.getenv("DKUBE_URL",
-                          dconfig("DKUBE_URL", default=None))
+    dkube_url = os.getenv("DKUBE_URL", dconfig("DKUBE_URL", default=None))
     if not dkube_url:
         sys.exit("DKUBE_URL not set.")
 
-    dkube_token = os.getenv("DKUBE_USER_ACCESS_TOKEN",
-                            dconfig("DKUBE_USER_ACCESS_TOKEN", default=None))
-    if not dkube_token:
-        sys.exit("DKUBE_USER_ACCESS_TOKEN not set.")
+    # dkube_token = os.getenv(
+    #     "DKUBE_USER_ACCESS_TOKEN",
+    #     dconfig("DKUBE_USER_ACCESS_TOKEN", default=None),
+    # )
+    # if not dkube_token:
+    #     sys.exit("DKUBE_USER_ACCESS_TOKEN not set.")
 
-    return {
-        "url": dkube_url,
-        "token": dkube_token
-    }
+    return {"url": dkube_url}
+
+
+def get_user_token(user: str):
+    user_info = get_user_info(user)
+    if not user_info:
+        raise Exception("User details not found.")
+    if "token" not in user_info[user]:
+        raise Exception("User token not found.")
+    return user_info[user]["token"]

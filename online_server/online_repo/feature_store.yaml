@@ -1,0 +1,9 @@
+project: ''
+registry:
+    registry_store_type: dkubefs.dkube_registry.DkubeRegistryStore
+    path: ""
+provider: dkubefs.dkube_provider.DkubeProvider
+online_store:
+    type: dkubefs.dkube_store.DkubeOnlineStore
+offline_store:
+    type: dkubefs.mysqlserver.MySQLOfflineStore

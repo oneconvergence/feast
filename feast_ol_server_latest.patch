@@ -128,6 +128,31 @@ index 91215501..aeca4dd0 100644
  
              self._registry.apply_materialization(
                  feature_view, self.project, start_date, end_date,
+diff --git a/sdk/python/feast/feature_view.py b/sdk/python/feast/feature_view.py
+index dd8cb4f0..d92484e2 100644
+--- a/sdk/python/feast/feature_view.py
++++ b/sdk/python/feast/feature_view.py
+@@ -455,7 +455,7 @@ class FeatureView(BaseFeatureView):
+         return ttl_duration
+ 
+     @classmethod
+-    def from_proto(cls, feature_view_proto: FeatureViewProto):
++    def from_proto(cls, feature_view_proto: FeatureViewProto, **kwargs):
+         """
+         Creates a feature view from a protobuf representation of a feature view.
+ 
+@@ -465,9 +465,9 @@ class FeatureView(BaseFeatureView):
+         Returns:
+             A FeatureViewProto object based on the feature view protobuf.
+         """
+-        batch_source = DataSource.from_proto(feature_view_proto.spec.batch_source)
++        batch_source = DataSource.from_proto(feature_view_proto.spec.batch_source, **kwargs)
+         stream_source = (
+-            DataSource.from_proto(feature_view_proto.spec.stream_source)
++            DataSource.from_proto(feature_view_proto.spec.stream_source, **kwargs)
+             if feature_view_proto.spec.HasField("stream_source")
+             else None
+         )
 diff --git a/sdk/python/feast/infra/passthrough_provider.py b/sdk/python/feast/infra/passthrough_provider.py
 index 8c6dd831..ff794070 100644
 --- a/sdk/python/feast/infra/passthrough_provider.py

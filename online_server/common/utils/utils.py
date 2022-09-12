@@ -1,9 +1,13 @@
 import json
-from pathlib import Path
 import sys
-from typing import Optional
+from pathlib import Path
+from typing import List, Optional
+
 import jinja2
 import yaml
+
+USERS = {}
+
 
 def get_repo_path() -> str:
     repo_path = Path("online_repo/").absolute()
@@ -12,9 +16,8 @@ def get_repo_path() -> str:
 
 
 def gen_template(
-    input_file: str,
-    output_file: str,
-    template_file: Optional[str] = None):
+    input_file: str, output_file: str, template_file: Optional[str] = None
+):
     if input_file.endswith((".yml", ".yaml")):
         with open(input_file, "r") as f:
             data = yaml.load(f, Loader=yaml.SafeLoader)
@@ -44,6 +47,42 @@ def gen_template(
         of.write(config_data)
 
     print(f"Generated o/p file: {output_file}")
+
+
+def add_user_info(user: str, val: dict):
+    global USERS
+    USERS[user] = val
+
+
+def get_user_info(user: str) -> dict:
+    global USERS
+    if user in USERS:
+        user_info = USERS[user]
+    else:
+        user_info = {user: {}}
+    return user_info
+
+
+def del_user_info(user: str):
+    global USERS
+    if user in USERS:
+        del USERS[user]
+
+
+def list_user_info() -> List[dict]:
+    global USERS
+    return USERS
+
+
+def set_env(project, user, offline_dataset):
+    # os.environ[project] = f"{user}_{offline_dataset}"
+    pass
+
+
+def unset_env(project):
+    # os.environ.pop(project, None)
+    pass
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
