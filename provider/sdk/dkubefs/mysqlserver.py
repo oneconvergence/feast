@@ -15,13 +15,11 @@ from feast.infra.provider import _get_requested_feature_views_to_features_dict
 from feast.registry import Registry
 from feast.repo_config import FeastConfigBaseModel, RepoConfig
 from mysql.connector import connect
+from provider.sdk.dkubefs.mysqlserver_source import MySQLServerSource
+from provider.sdk.dkubefs.utils import get_mysql_connect_args, get_mysql_url
 from pydantic.types import StrictStr
 from pydantic.typing import Literal
 from sqlalchemy import create_engine
-from provider.sdk.dkubefs.mysqlserver_source import MySQLServerSource
-from provider.sdk.dkubefs.utils import get_mysql_connect_args, \
-     get_mysql_url
-
 
 EntitySchema = Dict[str, np.dtype]
 
@@ -45,7 +43,7 @@ class MySQLOfflineStore(OfflineStore):
         data_source: DataSource,
         join_key_columns: List[str],
         feature_name_columns: List[str],
-        event_timestamp_column: str,
+        timestamp_field: str,
         created_timestamp_column: Optional[str],
         start_date: datetime,
         end_date: datetime,
@@ -59,7 +57,7 @@ class MySQLOfflineStore(OfflineStore):
         columns_join_string = ", ".join(join_key_columns)
         if columns_join_string != "":
             columns_join_string = "PARTITION BY " + columns_join_string
-        timestamps = [event_timestamp_column]
+        timestamps = [timestamp_field]
         if created_timestamp_column:
             timestamps.append(created_timestamp_column)
 
@@ -68,12 +66,12 @@ class MySQLOfflineStore(OfflineStore):
             join_key_columns + feature_name_columns + timestamps
         )
 
-        splitted_fields = field_string.split(',')
+        splitted_fields = field_string.split(",")
         splitted_fields = [x.strip() for x in splitted_fields]
-        if 'index' in splitted_fields:
-            splitted_fields.remove('index')
-            splitted_fields.insert(0, '`index`')
-            field_string = ', '.join(splitted_fields)
+        if "index" in splitted_fields:
+            splitted_fields.remove("index")
+            splitted_fields.insert(0, "`index`")
+            field_string = ", ".join(splitted_fields)
 
         query = f"""
             SELECT
@@ -86,7 +84,7 @@ class MySQLOfflineStore(OfflineStore):
                 {columns_join_string} ORDER BY {timestamp_desc_string}
                 ) AS _feast_row
                 FROM {from_expression}
-                WHERE {event_timestamp_column}
+                WHERE {timestamp_field}
                 BETWEEN TIMESTAMP '{start_date}' AND TIMESTAMP '{end_date}'
             ) as tt
             WHERE _feast_row = 1
@@ -143,7 +141,7 @@ class MySQLOfflineStore(OfflineStore):
             entity_df_event_timestamp_col=entity_df_event_timestamp_col,
             query_template=MULTIPLE_FEATURE_VIEW_POINT_IN_TIME_JOIN,
             full_feature_names=full_feature_names,
-            entity_df_columns=table_schema.keys()
+            entity_df_columns=table_schema.keys(),
         )
 
         job = MySQLRetrievalJob(
@@ -165,7 +163,8 @@ class FeatureViewQueryContext:
     ttl: int
     entities: List[str]
     features: List[str]  # feature reference format
-    event_timestamp_column: str
+    # event_timestamp_column: str
+    timestamp_field: str
     created_timestamp_column: Optional[str]
     table_subquery: str
     entity_selections: List[str]
@@ -208,6 +207,7 @@ def _upload_entity_df_into_mysql_and_get_entity_schema(
             entity_df.to_sql(name=table_id, con=conn, if_exists="replace")
         return dict(zip(entity_df.columns, entity_df.dtypes)), table_id
     raise Exception("Unsupported entitydf type")
+
 
 def _assert_expected_columns_in_mysql(
     join_keys: Set[str],
@@ -267,7 +267,8 @@ def get_feature_view_query_context(
             ttl_seconds = 0
 
         assert isinstance(feature_view.input, MySQLServerSource)
-        event_timestamp_column = feature_view.input.event_timestamp_column
+        # event_timestamp_column = feature_view.input.event_timestamp_column
+        timestamp_field = feature_view.input.timestamp_field
         created_timestamp_column = feature_view.input.created_timestamp_column
 
         context = FeatureViewQueryContext(
@@ -275,8 +276,11 @@ def get_feature_view_query_context(
             ttl=ttl_seconds,
             entities=join_keys,
             features=features,
-            event_timestamp_column=reverse_field_mapping.get(
-                event_timestamp_column, event_timestamp_column
+            # event_timestamp_column=reverse_field_mapping.get(
+            #     event_timestamp_column, event_timestamp_column
+            # ),
+            timestamp_field=reverse_field_mapping.get(
+                timestamp_field, timestamp_field
             ),
             created_timestamp_column=reverse_field_mapping.get(
                 created_timestamp_column, created_timestamp_column
@@ -386,16 +390,16 @@ WITH entity_dataframe AS (
 
 {{ featureview.name }}__subquery AS (
     SELECT
-        {{ featureview.event_timestamp_column }} as event_timestamp,
+        {{ featureview.timestamp_field }} as event_timestamp,
         {{ featureview.created_timestamp_column ~ ' as created_timestamp,' if featureview.created_timestamp_column else '' }}
         {{ featureview.entity_selections | join(', ')}}{% if featureview.entity_selections %},{% else %}{% endif %}
         {% for feature in featureview.features %}
             {{ feature }} as {% if full_feature_names %}{{ featureview.name }}__{{feature}}{% else %}{{ feature }}{% endif %}{% if loop.last %}{% else %}, {% endif %}
         {% endfor %}
     FROM {{ featureview.table_subquery }} AS sub
-    WHERE {{ featureview.event_timestamp_column }} <= (SELECT MAX(entity_timestamp) FROM entity_dataframe)
+    WHERE {{ featureview.timestamp_field }} <= (SELECT MAX(entity_timestamp) FROM entity_dataframe)
     {% if featureview.ttl == 0 %}{% else %}
-    AND {{ featureview.event_timestamp_column }} >= (SELECT MIN(entity_timestamp) FROM entity_dataframe) - interval {{ featureview.ttl }} second
+    AND {{ featureview.timestamp_field }} >= (SELECT MIN(entity_timestamp) FROM entity_dataframe) - interval {{ featureview.ttl }} second
     {% endif %}
 ),
 

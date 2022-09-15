@@ -5,22 +5,28 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import pytz
 from feast import RepoConfig
 from feast.entity import Entity
-from feast.feature_table import FeatureTable
 from feast.feature_view import FeatureView
+
 # from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
-from provider.sdk.dkubefs.online_drivers.online_server_client import \
-    OnlineServerClient
-from provider.sdk.dkubefs.utils import get_dkube_server_config, get_dkube_server_host, \
-    get_user, get_offline_dataset
+from provider.sdk.dkubefs.online_drivers.online_server_client import (
+    OnlineServerClient,
+)
+from provider.sdk.dkubefs.utils import (
+    get_dkube_server_config,
+    get_dkube_server_host,
+    get_offline_dataset,
+    get_user,
+)
 
 
 class OnlineRemoteDriver:
-    """ OnlineRemoteDriver proxies online store API calls to Feast Knative
-        service from client SDK.
+    """OnlineRemoteDriver proxies online store API calls to Feast Knative
+    service from client SDK.
     """
+
     online_server_client: Optional[OnlineServerClient] = None
 
     def __init__(self, config: RepoConfig) -> None:
@@ -31,7 +37,7 @@ class OnlineRemoteDriver:
                 # dkube_port=self.dkube_server["port"],
                 dkube_url=self.dkube_server,
                 token="",
-                dkube_endpoint=False
+                dkube_endpoint=False,
             )
             self.online_server_host = get_dkube_server_host()
             self.user = get_user()
@@ -40,7 +46,7 @@ class OnlineRemoteDriver:
     def online_write_batch(
         self,
         config: RepoConfig,
-        table: Union[FeatureTable, FeatureView],
+        table: FeatureView,
         data: List[
             Tuple[
                 EntityKeyProto,
@@ -51,8 +57,8 @@ class OnlineRemoteDriver:
         ],
         progress: Optional[Callable[[int], Any]],
     ) -> None:
-        """ This function is a just placeholder. The call gets
-            handled in call_materialize().
+        """This function is a just placeholder. The call gets
+        handled in call_materialize().
         """
         # project = config.project
         # for entity_key, values, timestamp, created_ts in data:
@@ -85,8 +91,7 @@ class OnlineRemoteDriver:
         created_ts,
         val,
     ):
-        """ Not used in SDK any more.
-        """
+        """Not used in SDK any more."""
         # with connect(**self.connect_args) as conn:
         #     with conn.cursor(buffered=True) as cursor:
         #         _update_query = f"""
@@ -126,11 +131,11 @@ class OnlineRemoteDriver:
     def online_read(
         self,
         config: RepoConfig,
-        table: Union[FeatureTable, FeatureView],
+        table: FeatureView,
         entity_keys: List[EntityKeyProto],
         requested_features: List[str] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
-        """ Placeholder only. Not used with remote driver. """
+        """Placeholder only. Not used with remote driver."""
         # project = config.project
         # result = list()
         # for entity_key in entity_keys:
@@ -160,8 +165,8 @@ class OnlineRemoteDriver:
     def update(
         self,
         config: RepoConfig,
-        tables_to_delete: Sequence[Union[FeatureTable, FeatureView]],
-        tables_to_keep: Sequence[Union[FeatureTable, FeatureView]],
+        tables_to_delete: Sequence[FeatureView],
+        tables_to_keep: Sequence[FeatureView],
         entities_to_delete: Sequence[Entity],
         entities_to_keep: Sequence[Entity],
         partial: bool,
@@ -171,14 +176,14 @@ class OnlineRemoteDriver:
             keep_tables_names,
             delete_tables_names,
             keep_entities_names,
-            delete_entities_names
+            delete_entities_names,
         ) = preprocess_infra_tables(
             project=project,
             tables_to_delete=tables_to_delete,
             tables_to_keep=tables_to_keep,
             entities_to_delete=entities_to_delete,
-            entities_to_keep=entities_to_keep
-            )
+            entities_to_keep=entities_to_keep,
+        )
         tables_data = dict(
             project=project,
             tables_to_delete=delete_tables_names,
@@ -186,16 +191,18 @@ class OnlineRemoteDriver:
             entities_to_keep=keep_entities_names,
             entities_to_delete=delete_entities_names,
             user=self.user,
-            offline_dataset=self.offline_dataset
-            )
-        self.online_server_client.post("api/v1/infra_update",
-                                       data=tables_data,
-                                       headers=self.online_server_host)
+            offline_dataset=self.offline_dataset,
+        )
+        self.online_server_client.post(
+            "api/v1/infra_update",
+            data=tables_data,
+            headers=self.online_server_host,
+        )
 
     def teardown(
         self,
         config: RepoConfig,
-        tables: Sequence[Union[FeatureTable, FeatureView]],
+        tables: Sequence[FeatureView],
         entities: Sequence[Entity],
     ) -> None:
         # teardown_infra should remove all deployed infrastructure
@@ -207,18 +214,20 @@ class OnlineRemoteDriver:
             "project": project,
             "tables": tables_to_teardown,
             "user": self.user,
-            "offline_dataset": self.offline_dataset
+            "offline_dataset": self.offline_dataset,
         }
-        self.online_server_client.delete("api/v1/teardown",
-                                         data=teardown_data,
-                                         headers=self.online_server_host)
+        self.online_server_client.delete(
+            "api/v1/teardown",
+            data=teardown_data,
+            headers=self.online_server_host,
+        )
 
     def call_materialize(
         self,
         project: str,
         start_date: datetime,
         end_date: datetime,
-        feature_views:Optional[List[str]] = None
+        feature_views: Optional[List[str]] = None,
     ) -> None:
         materialize_data = {
             "project": project,
@@ -226,28 +235,32 @@ class OnlineRemoteDriver:
             "end_date": end_date.isoformat(),
             "feature_views": feature_views,
             "user": self.user,
-            "offline_dataset": self.offline_dataset
+            "offline_dataset": self.offline_dataset,
         }
-        self.online_server_client.post("api/v1/materialize",
-                                       data=materialize_data,
-                                       headers=self.online_server_host)
+        self.online_server_client.post(
+            "api/v1/materialize",
+            data=materialize_data,
+            headers=self.online_server_host,
+        )
 
     def call_materialize_incremental(
         self,
         project: str,
         end_date: datetime,
-        feature_views:Optional[List[str]] = None
+        feature_views: Optional[List[str]] = None,
     ) -> None:
         materialize_data = {
             "project": project,
             "end_date": end_date.isoformat(),
             "feature_views": feature_views,
             "user": self.user,
-            "offline_dataset": self.offline_dataset
+            "offline_dataset": self.offline_dataset,
         }
-        self.online_server_client.post("api/v1/materialize_incr",
-                                       data=materialize_data,
-                                       headers=self.online_server_host)
+        self.online_server_client.post(
+            "api/v1/materialize_incr",
+            data=materialize_data,
+            headers=self.online_server_host,
+        )
 
 
 def _to_naive_utc(ts: datetime):
@@ -263,20 +276,21 @@ def _table_name(project, table):
 
 def preprocess_infra_tables(
     project: str,
-    tables_to_delete: Sequence[Union[FeatureTable, FeatureView]],
-    tables_to_keep: Sequence[Union[FeatureTable, FeatureView]],
+    tables_to_delete: Sequence[FeatureView],
+    tables_to_keep: Sequence[FeatureView],
     entities_to_delete: Sequence[Entity],
-    entities_to_keep: Sequence[Entity]) -> Tuple[
-        Sequence[str], Sequence[str], Sequence[str], Sequence[str]
-    ]:
+    entities_to_keep: Sequence[Entity],
+) -> Tuple[Sequence[str], Sequence[str], Sequence[str], Sequence[str]]:
     keep_tables = [_table_name(project, table) for table in tables_to_keep]
     delete_tables = [_table_name(project, table) for table in tables_to_delete]
-    entities_delete = [_table_name(project, table) for table in entities_to_delete]
+    entities_delete = [
+        _table_name(project, table) for table in entities_to_delete
+    ]
     entities_keep = [_table_name(project, table) for table in entities_to_keep]
     return keep_tables, delete_tables, entities_keep, entities_delete
 
 
 def preprocess_teardown_tables(
-    project,
-    tables: Sequence[Union[FeatureTable, FeatureView]]) -> Sequence[str]:
+    project, tables: Sequence[FeatureView]
+) -> Sequence[str]:
     return [_table_name(project, table) for table in tables]

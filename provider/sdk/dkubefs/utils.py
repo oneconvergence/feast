@@ -1,8 +1,8 @@
 import os
-from pathlib import Path
 import sys
-import tomli
+from pathlib import Path
 
+import tomli
 from dkube.sdk import DkubeApi
 
 
@@ -17,7 +17,8 @@ def get_cofiguration():
         return {}
 
 
-dconfig = get_cofiguration()
+# dconfig = get_cofiguration()
+dconfig = {}
 
 
 def get_dkube_client():
@@ -39,8 +40,10 @@ def get_offline_store_conf(offline_user=None):
         if os.getenv("DKUBE_USER_LOGIN_NAME"):
             USER = os.getenv("DKUBE_USER_LOGIN_NAME")
         else:
-            sys.exit("Please specify dkube user name in DKUBE_USER_LOGIN_NAME "
-                    "environment variable.")
+            sys.exit(
+                "Please specify dkube user name in DKUBE_USER_LOGIN_NAME "
+                "environment variable."
+            )
     offline_ds = os.getenv("OFFLINE_DATASET", dconfig.get("OFFLINE_DATASET"))
     if offline_ds:
         dclient = get_dkube_client()
@@ -50,7 +53,7 @@ def get_offline_store_conf(offline_user=None):
             "host": ods["datum"]["sql"]["host"],
             "port": ods["datum"]["sql"]["port"],
             "password": ods["datum"]["sql"]["password"],
-            "db": ods["datum"]["sql"]["database"]
+            "db": ods["datum"]["sql"]["database"],
         }
     # Notes(VK): We can get away with this.
     offline_server = dconfig.get("offline_server")
@@ -63,17 +66,19 @@ def get_offline_store_conf(offline_user=None):
     db = offline_server["db"]
 
     if not all([host, user, port, password, db]):
-        sys.exit("Offline server details not found. Please "
-                 "specify OFFLINE_DATASET in env variable or"
-                 "offline server details individually in config"
-                 "file.")
+        sys.exit(
+            "Offline server details not found. Please "
+            "specify OFFLINE_DATASET in env variable or"
+            "offline server details individually in config"
+            "file."
+        )
 
     return {
         "user": user,
         "host": host,
         "port": port,
         "password": password,
-        "db": db
+        "db": db,
     }
 
 
@@ -98,13 +103,14 @@ def get_mysql_connect_args(connection_str=None):
     conf.update(autocommit=True)
     return conf
 
+
 def get_mysql_url(_connect_args=None):
     if not _connect_args:
         _connect_args = get_offline_store_conf()
-    if 'db' in _connect_args:
-        db = _connect_args['db']
-    elif 'database' in _connect_args:
-        db = _connect_args['database']
+    if "db" in _connect_args:
+        db = _connect_args["db"]
+    elif "database" in _connect_args:
+        db = _connect_args["database"]
     else:
         sys.exit("db or database not set")
     return f"""mysql+pymysql://{_connect_args['user']}:{
@@ -135,9 +141,7 @@ def get_dkube_server_host():
     if feast_ol_url:
         return feast_ol_url
     else:
-        return {
-            "Host": "feast-online-server.default.svc"
-        }
+        return {"Host": "feast-online-server.default.svc"}
 
 
 def get_dkube_db_config():
@@ -152,7 +156,7 @@ def get_dkube_db_config():
         "port": ods["datum"]["sql"]["port"],
         "user": ods["datum"]["sql"]["username"],
         "secret": ods["datum"]["sql"]["password"],
-        "db": ods["datum"]["sql"]["database"]
+        "db": ods["datum"]["sql"]["database"],
     }
 
 
@@ -162,28 +166,26 @@ def get_registry_config():
         # if "url" not in dconfig.get("dkube", {}):
         sys.exit("DKUBE_URL not set.")
 
-    dkube_token = os.getenv("DKUBE_USER_ACCESS_TOKEN",
-                    dconfig.get("DKUBE_USER_ACCESS_TOKEN"))
+    dkube_token = os.getenv(
+        "DKUBE_USER_ACCESS_TOKEN", dconfig.get("DKUBE_USER_ACCESS_TOKEN")
+    )
     if not dkube_token:
         sys.exit("DKUBE_USER_ACCESS_TOKEN not set.")
 
-    return {
-        "url": dkube_url,
-        "token": dkube_token
-    }
+    return {"url": dkube_url, "token": dkube_token}
 
 
 def get_user():
-    user = os.getenv("DKUBE_USER_LOGIN_NAME",
-            dconfig.get("DKUBE_USER_LOGIN_NAME"))
+    user = os.getenv(
+        "DKUBE_USER_LOGIN_NAME", dconfig.get("DKUBE_USER_LOGIN_NAME")
+    )
     if not user:
         raise Exception("DKUBE_USER_LOGIN_NAME not specified.")
     return user
 
 
 def get_offline_dataset():
-    offline_ds = os.getenv("OFFLINE_DATASET",
-                    dconfig.get("OFFLINE_DATASET"))
+    offline_ds = os.getenv("OFFLINE_DATASET", dconfig.get("OFFLINE_DATASET"))
     if not offline_ds:
         raise Exception("OFFLINE_DATASET not specified.")
     return offline_ds

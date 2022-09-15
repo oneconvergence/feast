@@ -4,11 +4,14 @@ from typing import Any, Callable, Dict, Iterable, Optional, Tuple
 import pandas as pd
 from feast import RepoConfig, ValueType
 from feast.data_source import DataSource
-from feast.protos.feast.core.DataSource_pb2 import \
-    DataSource as DataSourceProto
+from feast.protos.feast.core.DataSource_pb2 import (
+    DataSource as DataSourceProto,
+)
 from mysql.connector import connect
-
-from provider.sdk.dkubefs.utils import get_mysql_connect_args, get_offline_connection_str
+from provider.sdk.dkubefs.utils import (
+    get_mysql_connect_args,
+    get_offline_connection_str,
+)
 
 
 class MySQLOptions:
@@ -63,17 +66,28 @@ class MySQLServerSource(DataSource):
         created_timestamp_column: Optional[str] = "",
         field_mapping: Optional[Dict[str, str]] = None,
         date_partition_column: Optional[str] = "",
+        tags: Optional[Dict[str, str]] = None,
+        owner: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
         connection_str = get_offline_connection_str()
         self._mysql_options = MySQLOptions(connection_str, table_ref)
         self._connection_str = connection_str
         self._table_ref = table_ref
         super().__init__(
-            event_timestamp_column,
-            created_timestamp_column,
-            field_mapping,
-            date_partition_column,
+            timestamp_field=event_timestamp_column,
+            created_timestamp_column=created_timestamp_column,
+            field_mapping=field_mapping,
+            date_partition_column=date_partition_column,
+            tags=tags,
+            owner=owner,
+            name=name,
+            description=description,
         )
+
+    def __hash__(self):
+        return super().__hash__()
 
     def __eq__(self, other):
         if not isinstance(other, MySQLServerSource):
@@ -84,7 +98,7 @@ class MySQLServerSource(DataSource):
         return (
             self._mysql_options.connection_str
             == other._mysql_options.connection_str
-            and self.event_timestamp_column == other.event_timestamp_column
+            and self.timestamp_field == other.timestamp_field
             and self.created_timestamp_column == other.created_timestamp_column
             and self.field_mapping == other.field_mapping
         )
@@ -111,7 +125,7 @@ class MySQLServerSource(DataSource):
         return MySQLServerSource(
             field_mapping=dict(data_source.field_mapping),
             table_ref=options["table_ref"],
-            event_timestamp_column=data_source.event_timestamp_column,
+            timestamp_field=data_source.timestamp_field,
             created_timestamp_column=data_source.created_timestamp_column,
             date_partition_column=data_source.date_partition_column,
         )
@@ -122,7 +136,7 @@ class MySQLServerSource(DataSource):
             field_mapping=self.field_mapping,
             custom_options=self._mysql_options.to_proto(),
         )
-        data_source_proto.event_timestamp_column = self.event_timestamp_column
+        data_source_proto.timestamp_field = self.timestamp_field
         data_source_proto.created_timestamp_column = (
             self.created_timestamp_column
         )
@@ -162,6 +176,7 @@ class MySQLServerSource(DataSource):
 
     def get_table_query_string(self) -> str:
         return f"{self.table_ref}"
+
 
 def mysql_to_feast_value_type(mysql_type_as_str: str) -> ValueType:
     _type_map = {

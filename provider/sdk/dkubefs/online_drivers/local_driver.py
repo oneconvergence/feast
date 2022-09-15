@@ -1,28 +1,29 @@
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
-from feast import Entity, FeatureTable, FeatureView, RepoConfig
+
+import pytz
+from feast import Entity, FeatureView, RepoConfig
+from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
-from feast.infra.key_encoding_utils import serialize_entity_key
 from mysql.connector import connect
-import pytz
-
 from provider.sdk.dkubefs.utils import get_dkube_db_config
 
 
 class LocalDBDriver:
-    """ LocalDBDriver class handles batch read of data from
-        MySQL DB. This is the only operation that gets handled
-        by this class.
+    """LocalDBDriver class handles batch read of data from
+    MySQL DB. This is the only operation that gets handled
+    by this class.
     """
+
     online_store_config = None
     connect_args = None
 
     def __init__(self, repo_config: RepoConfig) -> None:
         self.online_store_config = repo_config.online_store
-        self.dkube_store = get_dkube_db_config() 
+        self.dkube_store = get_dkube_db_config()
         self.connect_args = {
             "autocommit": True,
         }
@@ -31,23 +32,29 @@ class LocalDBDriver:
         user = self.dkube_store["user"]
         password = self.dkube_store["secret"]
         database = self.dkube_store["db"]
-        any_val_unset = None in [host, port, user, password] \
-            or "" in [host, port, user, password]
+        any_val_unset = None in [host, port, user, password] or "" in [
+            host,
+            port,
+            user,
+            password,
+        ]
         if any_val_unset:
-            sys.exit("Config missing for feast store. Please contact administrator.")
+            sys.exit(
+                "Config missing for feast store. Please contact administrator."
+            )
         self.connect_args.update(
             host=host,
             port=port,
             user=user,
             password=password,
             database=database,
-            auth_plugin='mysql_native_password'
+            auth_plugin="mysql_native_password",
         )
 
     def online_write_batch(
         self,
         config: RepoConfig,
-        table: Union[FeatureTable, FeatureView],
+        table: FeatureView,
         data: List[
             Tuple[
                 EntityKeyProto,
@@ -126,7 +133,7 @@ class LocalDBDriver:
     def online_read(
         self,
         config: RepoConfig,
-        table: Union[FeatureTable, FeatureView],
+        table: FeatureView,
         entity_keys: List[EntityKeyProto],
         requested_features: List[str] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
@@ -158,8 +165,8 @@ class LocalDBDriver:
     def update(
         self,
         config: RepoConfig,
-        tables_to_delete: Sequence[Union[FeatureTable, FeatureView]],
-        tables_to_keep: Sequence[Union[FeatureTable, FeatureView]],
+        tables_to_delete: Sequence[FeatureView],
+        tables_to_keep: Sequence[FeatureView],
         entities_to_delete: Sequence[Entity],
         entities_to_keep: Sequence[Entity],
         partial: bool,
@@ -196,7 +203,7 @@ class LocalDBDriver:
     def teardown(
         self,
         config: RepoConfig,
-        tables: Sequence[Union[FeatureTable, FeatureView]],
+        tables: Sequence[FeatureView],
         entities: Sequence[Entity],
     ):
         # teardown_infra should remove all deployed infrastructure

@@ -1,12 +1,12 @@
 diff --git a/sdk/python/feast/cli.py b/sdk/python/feast/cli.py
-index 91815d30..98e37cea 100644
+index 91815d30..dc6fbb58 100644
 --- a/sdk/python/feast/cli.py
 +++ b/sdk/python/feast/cli.py
 @@ -13,6 +13,7 @@
  # limitations under the License.
  import json
  import logging
-+import os
++import sys
  import warnings
  from datetime import datetime
  from pathlib import Path
@@ -31,7 +31,7 @@ index 91815d30..98e37cea 100644
      """Create a new Feast repository"""
 +    if template.lower() == "dkube":
 +        if not git_url:
-+            os.exit("Please specify Github URL of project.")
++            sys.exit("Please specify Github URL of project.")
 +        project_directory = git_url.split("/")[-1].split(".git")[0]
      if not project_directory:
          project_directory = generate_project_name()
@@ -45,15 +45,15 @@ index 91815d30..98e37cea 100644
  
  @cli.command("serve")
 diff --git a/sdk/python/feast/feature_store.py b/sdk/python/feast/feature_store.py
-index c49ce7dc..b2cac094 100644
+index c49ce7dc..97ff966a 100644
 --- a/sdk/python/feast/feature_store.py
 +++ b/sdk/python/feast/feature_store.py
 @@ -854,6 +854,40 @@ class FeatureStore:
              services_to_update,
          )
  
-+        add_odfvs = [o.name for o in odfvs_to_update]
-+        add_sfvs = [s.name for s in sfvs_to_update]
++        add_odfvs = [{"name": o.name} for o in odfvs_to_update]
++        add_sfvs = [{"name": s.name} for s in sfvs_to_update]
 +        add_entities = [{
 +            'name': ent.name,
 +            'data_type': ent.value_type.name
@@ -63,16 +63,16 @@ index c49ce7dc..b2cac094 100644
 +        add_feature_views = [{
 +            'name': fv.name,
 +            'entities': fv.entities
-+        }
-+        for fv in views_to_update]
++            }
++            for fv in views_to_update]
 +
 +        add_feature_services = [{
 +            'name': fs.name,
 +            'features': fs.features
-+        }
-+        for fs in services_to_update]
++            }
++            for fs in services_to_update]
 +
-+        add_data_sources = [ds.name for ds in data_sources_to_update]
++        add_data_sources = [{"name": ds.name} for ds in data_sources_to_update]
 +
 +        infra_update = {
 +            "project": self.project,
@@ -89,11 +89,11 @@ index c49ce7dc..b2cac094 100644
          # Add all objects to the registry and update the provider's infrastructure.
          for ds in data_sources_to_update:
              self._registry.apply_data_source(ds, project=self.project, commit=False)
-@@ -899,6 +933,37 @@ class FeatureStore:
+@@ -899,6 +933,40 @@ class FeatureStore:
                  ob for ob in objects_to_delete if isinstance(ob, ValidationReference)
              ]
  
-+            delete_odfvs = [o.name for o in odfvs_to_delete]
++            delete_odfvs = [{"name": o.name} for o in odfvs_to_delete]
 +
 +            delete_entities = [{
 +                'name': ent.name,
@@ -104,17 +104,20 @@ index c49ce7dc..b2cac094 100644
 +            delete_feature_views = [{
 +                'name': fv.name,
 +                'entities': fv.entities
-+            }
-+            for fv in views_to_delete]
++                }
++                for fv in views_to_delete]
 +
 +            delete_feature_services = [{
 +                'name': fs.name,
 +                'features': fs.features
-+            }
-+            for fs in services_to_delete]
++                }
++                for fs in services_to_delete]
 +
-+            delete_data_sources = [ds.name for ds in data_sources_to_delete]
-+            delete_sfvs = [sf.name for sf in sfvs_to_delete]
++            delete_data_sources = [
++                {"name": ds.name}
++                for ds in data_sources_to_delete]
++
++            delete_sfvs = [{"name": sf.name} for sf in sfvs_to_delete]
 +            infra_update["to_delete"] = {
 +                "entities": delete_entities,
 +                "feature_views": delete_feature_views,
@@ -127,7 +130,7 @@ index c49ce7dc..b2cac094 100644
              for data_source in data_sources_to_delete:
                  self._registry.delete_data_source(
                      data_source.name, project=self.project, commit=False
-@@ -932,6 +997,10 @@ class FeatureStore:
+@@ -932,6 +1000,10 @@ class FeatureStore:
                      validation_references.name, project=self.project, commit=False
                  )
  
@@ -138,7 +141,7 @@ index c49ce7dc..b2cac094 100644
          self._get_provider().update_infra(
              project=self.project,
              tables_to_delete=views_to_delete + sfvs_to_delete if not partial else [],
-@@ -941,7 +1010,11 @@ class FeatureStore:
+@@ -941,7 +1013,11 @@ class FeatureStore:
              partial=partial,
          )
  
@@ -151,7 +154,7 @@ index c49ce7dc..b2cac094 100644
  
          # go server needs to be reloaded to apply new configuration.
          # we're stopping it here
-@@ -959,7 +1032,7 @@ class FeatureStore:
+@@ -959,7 +1035,7 @@ class FeatureStore:
          entities = self.list_entities()
  
          self._get_provider().teardown_infra(self.project, tables, entities)
@@ -160,7 +163,7 @@ index c49ce7dc..b2cac094 100644
          self._teardown_go_server()
  
      @log_exceptions_and_usage
-@@ -1212,6 +1285,13 @@ class FeatureStore:
+@@ -1212,6 +1288,13 @@ class FeatureStore:
              <BLANKLINE>
              ...
          """
@@ -174,7 +177,7 @@ index c49ce7dc..b2cac094 100644
          feature_views_to_materialize = self._get_feature_views_to_materialize(
              feature_views
          )
-@@ -1300,6 +1380,13 @@ class FeatureStore:
+@@ -1300,6 +1383,13 @@ class FeatureStore:
              <BLANKLINE>
              ...
          """
@@ -216,10 +219,381 @@ index 8c6dd831..362fb13e 100644
 +            self.repo_config, end_date, feature_views
 +        )
 diff --git a/sdk/python/feast/registry.py b/sdk/python/feast/registry.py
-index f72fd717..b940640b 100644
+index f72fd717..da27f58a 100644
 --- a/sdk/python/feast/registry.py
 +++ b/sdk/python/feast/registry.py
-@@ -1749,18 +1749,27 @@ class Registry(BaseRegistry):
+@@ -14,6 +14,7 @@
+ import abc
+ import json
+ import logging
++import sys
+ import uuid
+ from abc import abstractmethod
+ from collections import defaultdict
+@@ -873,8 +874,9 @@ class Registry(BaseRegistry):
+         assert self.cached_registry_proto
+ 
+         self.cached_registry_proto.infra.CopyFrom(infra.to_proto())
++        # NS(VK)
+         if commit:
+-            self.commit()
++            self.commit(project=project, ns=True)
+ 
+     def get_infra(self, project: str, allow_cache: bool = False) -> Infra:
+         """
+@@ -912,7 +914,14 @@ class Registry(BaseRegistry):
+         entity_proto.spec.project = project
+         self._prepare_registry_for_changes(project)
+         assert self.cached_registry_proto
+-
++        infra_update = {
++            "project": project,
++            "to_add": {
++                "entities": [
++                    {"name": entity.name, "data_type": entity.value_type.name}
++                ]
++            },
++        }
+         for idx, existing_entity_proto in enumerate(
+             self.cached_registry_proto.entities
+         ):
+@@ -921,11 +930,18 @@ class Registry(BaseRegistry):
+                 and existing_entity_proto.spec.project == project
+             ):
+                 del self.cached_registry_proto.entities[idx]
++                infra_update["to_delete"] = {
++                    "entities": [{"name": entity_proto.spec.name}]
++                }
+                 break
+ 
+         self.cached_registry_proto.entities.append(entity_proto)
+         if commit:
+-            self.commit()
++            self.commit(
++                project=project,
++                to_add=infra_update["to_add"],
++                to_delete=infra_update["to_delete"],
++            )
+ 
+     def list_entities(self, project: str, allow_cache: bool = False) -> List[Entity]:
+         """
+@@ -981,9 +997,18 @@ class Registry(BaseRegistry):
+             commit: Whether to immediately commit to the registry
+         """
+         registry = self._prepare_registry_for_changes(project)
++        infra_update = {
++            "project": project,
++            "to_add": {"data_sources": [{"name": data_source.name}]},
++            "to_delete": {"data_sources": []},
++        }
++
+         for idx, existing_data_source_proto in enumerate(registry.data_sources):
+             if existing_data_source_proto.name == data_source.name:
+                 del registry.data_sources[idx]
++                infra_update["to_delete"]["data_sources"].append(
++                    {"name": existing_data_source_proto.name}
++                )
+         data_source_proto = data_source.to_proto()
+         data_source_proto.data_source_class_type = (
+             f"{data_source.__class__.__module__}.{data_source.__class__.__name__}"
+@@ -994,7 +1019,11 @@ class Registry(BaseRegistry):
+         )
+         registry.data_sources.append(data_source_proto)
+         if commit:
+-            self.commit()
++            self.commit(
++                project=project,
++                to_add=infra_update["to_add"],
++                to_delete=infra_update["to_delete"],
++            )
+ 
+     def delete_data_source(self, name: str, project: str, commit: bool = True):
+         """
+@@ -1008,13 +1037,23 @@ class Registry(BaseRegistry):
+         self._prepare_registry_for_changes(project)
+         assert self.cached_registry_proto
+ 
++        infra_update = {
++            "project": project,
++            "to_delete": {"data_sources": []},
++        }
++
+         for idx, data_source_proto in enumerate(
+             self.cached_registry_proto.data_sources
+         ):
+             if data_source_proto.name == name:
+                 del self.cached_registry_proto.data_sources[idx]
++                infra_update["to_delete"]["data_sources"].append(
++                    {"name": name}
++                )
+                 if commit:
+-                    self.commit()
++                    self.commit(
++                        project=project, to_delete=infra_update["to_delete"]
++                    )
+                 return
+         raise DataSourceNotFoundException(name)
+ 
+@@ -1037,7 +1076,18 @@ class Registry(BaseRegistry):
+         feature_service_proto.spec.project = project
+ 
+         registry = self._prepare_registry_for_changes(project)
+-
++        infra_update = {
++            "project": project,
++            "to_add": {
++                "feature_services": [
++                    {
++                        "name": feature_service.name,
++                        "features": feature_service.features,
++                    }
++                ]
++            },
++            "to_delete": {"feature_services": []},
++        }
+         for idx, existing_feature_service_proto in enumerate(registry.feature_services):
+             if (
+                 existing_feature_service_proto.spec.name
+@@ -1045,9 +1095,16 @@ class Registry(BaseRegistry):
+                 and existing_feature_service_proto.spec.project == project
+             ):
+                 del registry.feature_services[idx]
++                infra_update["to_delete"]["feature_services"].append(
++                    {"name": feature_service_proto.spec.name}
++                )
+         registry.feature_services.append(feature_service_proto)
+         if commit:
+-            self.commit()
++            self.commit(
++                project=project,
++                to_add=infra_update["to_delete"],
++                to_delete=infra_update["to_delete"],
++            )
+ 
+     def list_feature_services(
+         self, project: str, allow_cache: bool = False
+@@ -1063,7 +1120,9 @@ class Registry(BaseRegistry):
+             List of feature services
+         """
+ 
+-        registry = self._get_registry_proto(project=project, allow_cache=allow_cache)
++        registry = self._get_registry_proto(
++            project=project, allow_cache=allow_cache
++        )
+         feature_services = []
+         for feature_service_proto in registry.feature_services:
+             if feature_service_proto.spec.project == project:
+@@ -1143,18 +1202,32 @@ class Registry(BaseRegistry):
+ 
+         self._check_conflicting_feature_view_names(feature_view)
+         existing_feature_views_of_same_type: RepeatedCompositeFieldContainer
++
++        infra_update = {
++            "project": project,
++        }
++        fv_type = None
++
+         if isinstance(feature_view, StreamFeatureView):
+             existing_feature_views_of_same_type = (
+                 self.cached_registry_proto.stream_feature_views
+             )
++            infra_update.update(to_add={"sfvs": []}, to_delete={"sfvs": []})
++            fv_type = "sfvs"
+         elif isinstance(feature_view, FeatureView):
+             existing_feature_views_of_same_type = (
+                 self.cached_registry_proto.feature_views
+             )
++            infra_update.update(
++                to_add={"feature_views": []}, to_delete={"feature_views": []}
++            )
++            fv_type = "feature_views"
+         elif isinstance(feature_view, OnDemandFeatureView):
+             existing_feature_views_of_same_type = (
+                 self.cached_registry_proto.on_demand_feature_views
+             )
++            infra_update.update(to_add={"odfvs": []}, to_delete={"odfvs": []})
++            fv_type = "odfvs"
+         elif isinstance(feature_view, RequestFeatureView):
+             existing_feature_views_of_same_type = (
+                 self.cached_registry_proto.request_feature_views
+@@ -1176,10 +1249,23 @@ class Registry(BaseRegistry):
+                     return
+                 else:
+                     del existing_feature_views_of_same_type[idx]
++                    infra_update["to_delete"][fv_type].append(
++                        {"name": feature_view_proto.spec.name}
++                    )
+                     break
+         existing_feature_views_of_same_type.append(feature_view_proto)
++        infra_update["to_add"][fv_type].append(
++            {
++                "name": feature_view_proto.spec.name,
++                "entities": feature_view.entities,
++            }
++        )
+         if commit:
+-            self.commit()
++            self.commit(
++                project=project,
++                to_add=infra_update["to_add"],
++                to_delete=infra_update["to_delete"],
++            )
+ 
+     def list_stream_feature_views(
+         self, project: str, allow_cache: bool = False
+@@ -1312,7 +1398,7 @@ class Registry(BaseRegistry):
+                 del self.cached_registry_proto.feature_views[idx]
+                 self.cached_registry_proto.feature_views.append(feature_view_proto)
+                 if commit:
+-                    self.commit()
++                    self.commit(project=project)
+                 return
+ 
+         for idx, existing_stream_feature_view_proto in enumerate(
+@@ -1336,7 +1422,7 @@ class Registry(BaseRegistry):
+                     stream_feature_view_proto
+                 )
+                 if commit:
+-                    self.commit()
++                    self.commit(project=project)
+                 return
+ 
+         raise FeatureViewNotFoundException(feature_view.name, project)
+@@ -1471,7 +1557,10 @@ class Registry(BaseRegistry):
+         """
+         self._prepare_registry_for_changes(project)
+         assert self.cached_registry_proto
+-
++        infra_update = {
++            "project": project,
++            "to_delete": {"feature_services": []},
++        }
+         for idx, feature_service_proto in enumerate(
+             self.cached_registry_proto.feature_services
+         ):
+@@ -1481,7 +1570,12 @@ class Registry(BaseRegistry):
+             ):
+                 del self.cached_registry_proto.feature_services[idx]
+                 if commit:
+-                    self.commit()
++                    infra_update["to_delete"]["feature_services"].append(
++                        {"name": name}
++                    )
++                    self.commit(
++                        project=project, to_delete=infra_update["to_delete"]
++                    )
+                 return
+         raise FeatureServiceNotFoundException(name, project)
+ 
+@@ -1496,6 +1590,9 @@ class Registry(BaseRegistry):
+         """
+         self._prepare_registry_for_changes(project)
+         assert self.cached_registry_proto
++        infra_update = {
++            "project": project,
++        }
+ 
+         for idx, existing_feature_view_proto in enumerate(
+             self.cached_registry_proto.feature_views
+@@ -1506,7 +1603,12 @@ class Registry(BaseRegistry):
+             ):
+                 del self.cached_registry_proto.feature_views[idx]
+                 if commit:
+-                    self.commit()
++                    infra_update["to_delete"] = {
++                        "feature_views": [{"name": name}]
++                    }
++                    self.commit(
++                        project=project, to_delete=infra_update["to_delete"]
++                    )
+                 return
+ 
+         for idx, existing_request_feature_view_proto in enumerate(
+@@ -1518,7 +1620,7 @@ class Registry(BaseRegistry):
+             ):
+                 del self.cached_registry_proto.request_feature_views[idx]
+                 if commit:
+-                    self.commit()
++                    self.commit(project=project)
+                 return
+ 
+         for idx, existing_on_demand_feature_view_proto in enumerate(
+@@ -1530,7 +1632,10 @@ class Registry(BaseRegistry):
+             ):
+                 del self.cached_registry_proto.on_demand_feature_views[idx]
+                 if commit:
+-                    self.commit()
++                    infra_update["to_delete"] = {"odfvs": [{"name": name}]}
++                    self.commit(
++                        project=project, to_delete=infra_update["to_delete"]
++                    )
+                 return
+ 
+         for idx, existing_stream_feature_view_proto in enumerate(
+@@ -1542,7 +1647,10 @@ class Registry(BaseRegistry):
+             ):
+                 del self.cached_registry_proto.stream_feature_views[idx]
+                 if commit:
+-                    self.commit()
++                    infra_update["to_delete"] = {"sfvs": [{"name": name}]}
++                    self.commit(
++                        project=project, to_delete=infra_update["to_delete"]
++                    )
+                 return
+ 
+         raise FeatureViewNotFoundException(name, project)
+@@ -1558,7 +1666,7 @@ class Registry(BaseRegistry):
+         """
+         self._prepare_registry_for_changes(project)
+         assert self.cached_registry_proto
+-
++        infra_update = {"project": project}
+         for idx, existing_entity_proto in enumerate(
+             self.cached_registry_proto.entities
+         ):
+@@ -1568,7 +1676,10 @@ class Registry(BaseRegistry):
+             ):
+                 del self.cached_registry_proto.entities[idx]
+                 if commit:
+-                    self.commit()
++                    infra_update["to_delete"] = {"entities": [{"name": name}]}
++                    self.commit(
++                        project=project, to_delete=infra_update["to_delete"]
++                    )
+                 return
+ 
+         raise EntityNotFoundException(name, project)
+@@ -1606,7 +1717,8 @@ class Registry(BaseRegistry):
+ 
+         self.cached_registry_proto.saved_datasets.append(saved_dataset_proto)
+         if commit:
+-            self.commit()
++            # NS(VK)
++            self.commit(project=project, ns=True)
+ 
+     def get_saved_dataset(
+         self, name: str, project: str, allow_cache: bool = False
+@@ -1686,7 +1798,8 @@ class Registry(BaseRegistry):
+ 
+         registry_proto.validation_references.append(validation_reference_proto)
+         if commit:
+-            self.commit()
++            # NS(VK)
++            self.commit(project=project, ns=True)
+ 
+     def get_validation_reference(
+         self, name: str, project: str, allow_cache: bool = False
+@@ -1733,7 +1846,8 @@ class Registry(BaseRegistry):
+             ):
+                 del registry_proto.validation_references[idx]
+                 if commit:
+-                    self.commit()
++                    # NS(VK)
++                    self.commit(project=project, ns=True)
+                 return
+         raise ValidationReferenceNotFound(name, project=project)
+ 
+@@ -1749,18 +1863,37 @@ class Registry(BaseRegistry):
              if project_metadata.project == project
          ]
  
@@ -227,13 +601,21 @@ index f72fd717..b940640b 100644
 +    def commit(self, **kwargs):
          """Commits the state of the registry cache to the remote registry store."""
 -        if self.cached_registry_proto:
-+        if "dkuberegistrystore" == self._registry_store.__class__.__name__.lower():
-+            assert 'to_add' in kwargs
-+            assert 'to_delete' in kwargs
+-            self._registry_store.update_registry_proto(self.cached_registry_proto)
++        if (
++            "dkuberegistrystore"
++            == self._registry_store.__class__.__name__.lower()
++        ):
++            kwargs.setdefault("to_add", {})
++            kwargs.setdefault("to_delete", {})
 +            if self.cached_registry_proto:
-+                self._registry_store.update_registry_proto(self.cached_registry_proto, **kwargs)
++                self._registry_store.update_registry_proto(
++                    self.cached_registry_proto, **kwargs
++                )
 +        elif self.cached_registry_proto:
-             self._registry_store.update_registry_proto(self.cached_registry_proto)
++            self._registry_store.update_registry_proto(
++                self.cached_registry_proto
++            )
  
      def refresh(self, project: Optional[str]):
          """Refreshes the state of the registry cache by fetching the registry state from the remote registry store."""
@@ -243,16 +625,145 @@ index f72fd717..b940640b 100644
 +    def teardown(self, **kwargs):
          """Tears down (removes) the registry."""
 -        self._registry_store.teardown()
-+        if "dkuberegistrystore" == self._registry_store.__class__.__name__.lower():
-+            assert 'project' in kwargs
-+            self._registry_store.teardown(project=kwargs['project'])
++        if (
++            "dkuberegistrystore"
++            == self._registry_store.__class__.__name__.lower()
++        ):
++            assert "project" in kwargs
++            self._registry_store.teardown(project=kwargs["project"])
 +        else:
 +            self._registry_store.teardown()
  
      def proto(self) -> RegistryProto:
          return self.cached_registry_proto or RegistryProto()
+@@ -1782,7 +1915,7 @@ class Registry(BaseRegistry):
+         assert self.cached_registry_proto
+         if _get_project_metadata(self.cached_registry_proto, project) is None:
+             _init_project_metadata(self.cached_registry_proto, project)
+-            self.commit()
++            self.commit(project=project)
+ 
+         return self.cached_registry_proto
+ 
+@@ -1824,8 +1957,17 @@ class Registry(BaseRegistry):
+             elif allow_cache and not expired:
+                 assert isinstance(self.cached_registry_proto, RegistryProto)
+                 return self.cached_registry_proto
+-
+-            registry_proto = self._registry_store.get_registry_proto()
++            if (
++                "dkuberegistrystore"
++                == self._registry_store.__class__.__name__.lower()
++            ):
++                if not project:
++                    sys.exit("Project is required for dkube registry")
++                registry_proto = self._registry_store.get_registry_proto(
++                    project=project
++                )
++            else:
++                registry_proto = self._registry_store.get_registry_proto()
+             self.cached_registry_proto = registry_proto
+             self.cached_registry_proto_created = datetime.utcnow()
+ 
+@@ -1839,7 +1981,7 @@ class Registry(BaseRegistry):
+                 usage.set_current_project_uuid(project_metadata.project_uuid)
+             else:
+                 _init_project_metadata(registry_proto, project)
+-                self.commit()
++                self.commit(project=project)
+ 
+             return registry_proto
+ 
+@@ -1862,3 +2004,87 @@ class Registry(BaseRegistry):
+             fv.spec.name: fv for fv in self.cached_registry_proto.request_feature_views
+         }
+         return {**odfvs, **fvs, **request_fvs}
++
++    def get_existing_project_attrs(self, project):
++        registry_proto = self._registry_store.get_registry_proto(
++            project=project
++        )
++        existing_entities = {
++            ent.spec.name: ent for ent in registry_proto.entities
++        }
++        existing_feature_svcs = {
++            fsvc.spec.name: fsvc for fsvc in registry_proto.feature_services
++        }
++        existing_odfvs = {
++            fv.spec.name: fv for fv in registry_proto.on_demand_feature_views
++        }
++        existing_fvs = {
++            fv.spec.name: fv for fv in registry_proto.feature_views
++        }
++        existing_sfvs = {
++            sfv.spec.name: sfv for sfv in registry_proto.stream_feature_views
++        }
++        existing_datasources = {
++            ds.spec.name: ds for ds in registry_proto.data_sources
++        }
++
++        existing_attrs = {
++            "entities": existing_entities,
++            "feature_services": existing_feature_svcs,
++            "odfvs": existing_odfvs,
++            "feature_views": existing_fvs,
++            "sfvs": existing_sfvs,
++            "data_sources": existing_datasources,
++        }
++        return existing_attrs
++
++    def update_newly_added_attrs(self, project, infra_update):
++        existing_attrs = self.get_existing_project_attrs(project=project)
++        to_add = infra_update["to_add"]
++        for k, v in to_add.items():
++            if k == "entities":
++                to_add["entities"] = list(
++                    filter(
++                        lambda entity: entity["name"]
++                        not in existing_attrs["entities"],
++                        v,
++                    )
++                )
++            elif k == "feature_views":
++                to_add["feature_views"] = list(
++                    filter(
++                        lambda fv: fv["name"]
++                        not in existing_attrs["feature_views"],
++                        v,
++                    )
++                )
++            elif k == "odfvs":
++                to_add["odfvs"] = list(
++                    filter(lambda odfv: odfv["name"]
++                    not in existing_attrs["odfvs"],
++                    v)
++                )
++            elif k == "feature_services":
++                to_add["feature_services"] = list(
++                    filter(
++                        lambda fsvc: fsvc["name"]
++                        not in existing_attrs["feature_services"],
++                        v,
++                    )
++                )
++            elif k == "sfvs":
++                to_add["sfvs"] = list(
++                    filter(
++                        lambda fsvc: fsvc["name"]
++                        not in existing_attrs["sfvs"],
++                        v,
++                    )
++                )
++            elif k == "data_sources":
++                to_add["data_sources"] = list(
++                    filter(
++                        lambda fsvc: fsvc["name"]
++                        not in existing_attrs["data_sources"],
++                        v,
++                    )
++                )
 diff --git a/sdk/python/feast/repo_operations.py b/sdk/python/feast/repo_operations.py
-index 9a5e64f8..3b3d7178 100644
+index 9a5e64f8..67c265ab 100644
 --- a/sdk/python/feast/repo_operations.py
 +++ b/sdk/python/feast/repo_operations.py
 @@ -10,6 +10,7 @@ from pathlib import Path
@@ -263,7 +774,21 @@ index 9a5e64f8..3b3d7178 100644
  from click.exceptions import BadParameter
  
  from feast import PushSource
-@@ -336,7 +337,7 @@ def cli_check_repo(repo_path: Path):
+@@ -22,7 +23,12 @@ from feast.feature_store import FeatureStore
+ from feast.feature_view import DUMMY_ENTITY, FeatureView
+ from feast.names import adjectives, animals
+ from feast.on_demand_feature_view import OnDemandFeatureView
+-from feast.registry import FEAST_OBJECT_TYPES, FeastObjectType, Registry
++from feast.registry import (
++    FEAST_OBJECT_TYPES,
++    FeastObjectType,
++    Registry,
++    get_registry_store_class_from_type,
++)
+ from feast.repo_config import RepoConfig
+ from feast.repo_contents import RepoContents
+ from feast.request_feature_view import RequestFeatureView
+@@ -336,7 +342,7 @@ def cli_check_repo(repo_path: Path):
  
  
  @log_exceptions_and_usage
@@ -272,32 +797,53 @@ index 9a5e64f8..3b3d7178 100644
      import os
      from distutils.dir_util import copy_tree
      from pathlib import Path
-@@ -348,6 +349,8 @@ def init_repo(repo_name: str, template: str):
+@@ -348,6 +354,8 @@ def init_repo(repo_name: str, template: str):
              message="Name should be alphanumeric values and underscores but not start with an underscore",
              param_hint="PROJECT_DIRECTORY",
          )
 +    if git_url:
-+        create_dkube_project(git_url)
++        create_dkube_project(repo_name, git_url)
      repo_path = Path(os.path.join(Path.cwd(), repo_name))
      repo_path.mkdir(exist_ok=True)
      repo_config_path = repo_path / "feature_store.yaml"
-@@ -417,3 +420,16 @@ def replace_str_in_file(file_path, match_str, sub_str):
+@@ -417,3 +425,34 @@ def replace_str_in_file(file_path, match_str, sub_str):
  def generate_project_name() -> str:
      """Generates a unique project name"""
      return f"{random.choice(adjectives)}_{random.choice(animals)}"
 +
 +
-+def create_dkube_project(repo_name:str, git_url: str):
++def create_dkube_project(repo_name: str, git_url: str):
 +    repo_path = Path(os.path.join(Path.cwd(), repo_name))
-+    repo = git.Repo.clone_from(git_url, repo_path)
++    if repo_path.exists():
++        from colorama import Fore, Style
++
++        print(
++            f"Repo - {Style.BRIGHT + Fore.GREEN}{repo_name}{Style.RESET_ALL} already exists"
++        )
++        return
++    git.Repo.clone_from(git_url, repo_path)
 +    gitc = git.Git()
-+    gitc.pull()
-+    branches = gitc.branch("--all").split()
-+    dev_branches = list(filter(lambda b: "remotes/origin/dev" == b, branches))
-+    if dev_branches:
-+        gitc.checkout("-t", "dev", "origin/dev")
-+    else:
-+        gitc.checkout("dev")
++    cwd = os.getcwd()
++    try:
++        cddir = cwd + "/" + repo_name
++        os.chdir(cddir)
++        gitc.fetch("origin")
++        branches = gitc.branch("-a").split()
++        dev_branches = list(
++            filter(lambda b: "remotes/origin/dev" == b, branches)
++        )
++        if dev_branches:
++            gitc.checkout("-t", "dev", "origin/dev")
++        else:
++            gitc.checkout("-b", "dev")
++    except Exception as e:
++        print("Something went wrong. %s" % str(e))
++        sys.exit(1)
++    finally:
++        os.chdir(cwd)
+diff --git a/sdk/python/feast/templates/dkube/__init__.py b/sdk/python/feast/templates/dkube/__init__.py
+new file mode 100644
+index 00000000..e69de29b
 diff --git a/sdk/python/feast/templates/dkube/bootstrap.py b/sdk/python/feast/templates/dkube/bootstrap.py
 new file mode 100644
 index 00000000..4449e483
