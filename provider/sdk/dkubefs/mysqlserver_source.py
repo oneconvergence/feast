@@ -70,13 +70,15 @@ class MySQLServerSource(DataSource):
         owner: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        timestamp_field: Optional[str] = None,
     ):
         connection_str = get_offline_connection_str()
         self._mysql_options = MySQLOptions(connection_str, table_ref)
         self._connection_str = connection_str
         self._table_ref = table_ref
+        _timestamp_field = timestamp_field or event_timestamp_column or ""
         super().__init__(
-            timestamp_field=event_timestamp_column,
+            timestamp_field=_timestamp_field,
             created_timestamp_column=created_timestamp_column,
             field_mapping=field_mapping,
             date_partition_column=date_partition_column,

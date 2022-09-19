@@ -66,7 +66,12 @@ class DkubeOnlineStore(OnlineStore):
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
         self.initialize(config)
         table.name = _table_id(config.project, table)
-        return self.driver["local"].online_read(config, table, entity_keys, requested_features)
+        return self.driver["local"].online_read(
+            config,
+            table,
+            entity_keys,
+            requested_features
+        )
 
     def update(
         self,
@@ -109,7 +114,7 @@ class DkubeOnlineStore(OnlineStore):
         config: RepoConfig,
         start_date: datetime,
         end_date: datetime,
-        feature_views:Optional[List[str]] = None
+        feature_views: Optional[List[str]] = None
     ) -> None:
         self.initialize(config)
         self.driver["remote"].call_materialize(
@@ -120,7 +125,7 @@ class DkubeOnlineStore(OnlineStore):
         self,
         config: RepoConfig,
         end_date: datetime,
-        feature_views:Optional[List[str]] = None
+        feature_views: Optional[List[str]] = None
     ) -> None:
         self.initialize(config)
         self.driver["remote"].call_materialize_incremental(

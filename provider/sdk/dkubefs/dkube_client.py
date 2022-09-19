@@ -1,4 +1,5 @@
 from functools import wraps
+import os
 import requests
 import json
 import urllib3
@@ -9,14 +10,16 @@ urllib3.disable_warnings()
 class DkubeClient(object):
     def __init__(self, **kwargs) -> None:
         self.dkube_endpoint = kwargs.get("dkube_endpoint", True)
-        self.token = kwargs.get("token", "")
+        # self.token = kwargs.get("token", "")
+        self.token = os.getenv("DKUBE_USER_ACCESS_TOKEN")
         self.dkube_url = kwargs.get("dkube_url", "")
 
     def api_endpoint(self, endpoint):
         if not self.dkube_endpoint:
             if self.dkube_url:
                 return f"{self.dkube_url}/{endpoint}"
-        raise Exception(f"dkube_url: {self.dkube_url} or endpoint: {endpoint} is missing")
+        raise Exception(
+            f"dkube_url: {self.dkube_url} or endpoint: {endpoint} is missing")
             # return f"http://{self.dkube_ip}:{self.dkube_port}/{endpoint}"
         # return f"https://{self.dkube_ip}:{self.dkube_port}/dkube/v2/controller/{endpoint}"
 
@@ -24,8 +27,8 @@ class DkubeClient(object):
         dkube_headers = {
             "Content-Type": "application/json",
         }
-        if self.dkube_endpoint:
-            dkube_headers.update(Authorization=f"Bearer {self.token}")
+        # if self.dkube_endpoint:
+        dkube_headers.update(Authorization=f"Bearer {self.token}")
         if headers and isinstance(headers, dict):
             dkube_headers.update(headers)
         return dkube_headers
