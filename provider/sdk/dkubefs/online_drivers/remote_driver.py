@@ -1,13 +1,11 @@
-# import json
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import pytz
 from feast import RepoConfig
 from feast.entity import Entity
 from feast.feature_view import FeatureView
 
-# from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
 from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from mysql.connector import connect
@@ -173,16 +171,16 @@ class OnlineRemoteDriver:
     ) -> None:
         project = config.project
         (
-            keep_tables_names,
-            delete_tables_names,
-            keep_entities_names,
-            delete_entities_names,
+           keep_tables_names,
+           delete_tables_names,
+           keep_entities_names,
+           delete_entities_names,
         ) = preprocess_infra_tables(
-            project=project,
-            tables_to_delete=tables_to_delete,
-            tables_to_keep=tables_to_keep,
-            entities_to_delete=entities_to_delete,
-            entities_to_keep=entities_to_keep,
+           project=project,
+           tables_to_delete=tables_to_delete,
+           tables_to_keep=tables_to_keep,
+           entities_to_delete=entities_to_delete,
+           entities_to_keep=entities_to_keep,
         )
         tables_data = dict(
             project=project,
@@ -281,16 +279,16 @@ def preprocess_infra_tables(
     entities_to_delete: Sequence[Entity],
     entities_to_keep: Sequence[Entity],
 ) -> Tuple[Sequence[str], Sequence[str], Sequence[str], Sequence[str]]:
-    keep_tables = [_table_name(project, table) for table in tables_to_keep]
-    delete_tables = [_table_name(project, table) for table in tables_to_delete]
+    keep_tables = [table.name for table in tables_to_keep]
+    delete_tables = [table.name for table in tables_to_delete]
     entities_delete = [
-        _table_name(project, table) for table in entities_to_delete
+        table.name for table in entities_to_delete
     ]
-    entities_keep = [_table_name(project, table) for table in entities_to_keep]
+    entities_keep = [table.name for table in entities_to_keep]
     return keep_tables, delete_tables, entities_keep, entities_delete
 
 
 def preprocess_teardown_tables(
     project, tables: Sequence[FeatureView]
 ) -> Sequence[str]:
-    return [_table_name(project, table) for table in tables]
+    return [table.name for table in tables]
