@@ -1,14 +1,10 @@
 import traceback
-from datetime import datetime
 from pathlib import Path
 
 from drivers import mysql_driver
-from fastapi import APIRouter, Request, Response
-from feast.sdk.python.feast.repo_config import load_repo_config
-from feast.sdk.python.feast.repo_operations import (
-    cli_check_repo,
-    registry_dump,
-)
+from fastapi import APIRouter, Depends, Response
+from feast.repo_config import load_repo_config
+from feast.repo_operations import cli_check_repo, registry_dump
 from models.exceptions import ValidationError
 from models.online_db import (
     InfraDelete,
@@ -16,7 +12,10 @@ from models.online_db import (
     Materialize,
     MaterializeIncremental,
 )
-from online_server.common.utils.utils import list_user_info, set_env, unset_env
+from online_server.common.utils.utils import (
+    extract_info,
+    list_user_info,
+)
 
 router = APIRouter()
 
@@ -26,16 +25,14 @@ def ping():
     return {"message": "pong"}
 
 
-@router.post("/api/v1/materialize", name="materialize", status_code=201)
-async def materialize(
-    request: Request, materialize_input: Materialize
-) -> None:
+@router.post(
+    "/api/v1/materialize",
+    name="materialize",
+    status_code=201,
+    dependencies=[Depends(extract_info)],
+)
+async def materialize(materialize_input: Materialize) -> None:
     try:
-        set_env(
-            materialize_input.project,
-            materialize_input.user,
-            materialize_input.offline_dataset,
-        )
         mysql_driver.materialize(
             materialize_input.project,
             materialize_input.start_date,
@@ -48,23 +45,18 @@ async def materialize(
         return Response(content=ve.error_msg, status_code=ve.status_code)
     except Exception as ex:
         return Response(content=str(ex), status_code=500)
-    finally:
-        unset_env(materialize_input.project)
 
 
 @router.post(
-    "/api/v1/materialize_incr", name="materialize_incremental", status_code=201
+    "/api/v1/materialize_incr",
+    name="materialize_incremental",
+    status_code=201,
+    dependencies=[Depends(extract_info)],
 )
 async def materialize_incremental(
-    request: Request,
     materialize_input: MaterializeIncremental,
 ) -> None:
     try:
-        set_env(
-            materialize_input.project,
-            materialize_input.user,
-            materialize_input.offline_dataset,
-        )
         mysql_driver.materialize_incremental(
             materialize_input.project,
             materialize_input.end_date,
@@ -77,16 +69,16 @@ async def materialize_incremental(
     except Exception as ex:
         print(traceback.format_exc())
         return Response(content=str(ex), status_code=500)
-    finally:
-        unset_env(materialize_input.project)
 
 
-@router.post("/api/v1/infra_update", name="infra_update", status_code=201)
-async def update_infra(request: Request, infra_input: InfraUpdate) -> None:
+@router.post(
+    "/api/v1/infra_update",
+    name="infra_update",
+    status_code=201,
+    dependencies=[Depends(extract_info)],
+)
+async def update_infra(infra_input: InfraUpdate) -> None:
     try:
-        set_env(
-            infra_input.project, infra_input.user, infra_input.offline_dataset
-        )
         mysql_driver.infra_update(
             infra_input.project,
             infra_input.tables_to_keep,
@@ -99,13 +91,17 @@ async def update_infra(request: Request, infra_input: InfraUpdate) -> None:
     except ValidationError as ve:
         return Response(content=ve.error_msg, status_code=ve.status_code)
     except Exception as ex:
+        print(traceback.format_exc())
         return Response(content=str(ex), status_code=500)
-    finally:
-        unset_env(infra_input.project)
 
 
-@router.delete("/api/v1/teardown", name="teardown", status_code=201)
-async def teardown_infra(request: Request, infra_delete: InfraDelete) -> None:
+@router.delete(
+    "/api/v1/teardown",
+    name="teardown",
+    status_code=200,
+    dependencies=[Depends(extract_info)],
+)
+async def teardown_infra(infra_delete: InfraDelete) -> None:
     try:
         mysql_driver.teardown(
             infra_delete.tables, infra_delete.entities, infra_delete.user
@@ -117,8 +113,13 @@ async def teardown_infra(request: Request, infra_delete: InfraDelete) -> None:
         return Response(content=str(ex), status_code=500)
 
 
-@router.get("/api/v1/registry/{project}", name="registry", status_code=201)
-async def registry_details(request: Request, project: str):
+@router.get(
+    "/api/v1/registry/{project}",
+    name="registry",
+    status_code=200,
+    dependencies=[Depends(extract_info)],
+)
+async def registry_details(project: str):
     repo = str(Path().absolute().parent) + "/online_repo"
     cli_check_repo(repo)
     repo_config = load_repo_config(repo)
@@ -127,7 +128,9 @@ async def registry_details(request: Request, project: str):
     return dump
 
 
-@router.get("/api/v1/user_info", status_code=201)
+@router.get(
+    "/api/v1/user_info", status_code=200, dependencies=[Depends(extract_info)]
+)
 async def dump_user_info():
     return list_user_info()
 

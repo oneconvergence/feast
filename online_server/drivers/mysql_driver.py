@@ -1,8 +1,8 @@
 from datetime import datetime
-from pathlib import Path
 from typing import List, Optional, Sequence
 
 from feast.feature_store import FeatureStore
+from feast.repo_config import RepoConfig
 from mysql.connector import connect
 
 from drivers.mysql_config import MysqlConfig
@@ -10,7 +10,7 @@ from common.utils.utils import get_repo_path
 
 
 def materialize(
-    project:str,
+    project: str,
     start_date: datetime,
     end_date: datetime,
     feature_views: Optional[List[str]] = None,
@@ -25,13 +25,13 @@ def materialize(
 
 
 def materialize_incremental(
-    project:str,
+    project: str,
     end_date: datetime,
     feature_views: Optional[List[str]] = None,
     user: Optional[str] = None,
     offline_dataset: Optional[str] = None
 ) -> None:
-    fs = FeatureStore(repo_path=get_repo_path())
+    fs = FeatureStore(repo_path=get_repo_path(), project=project)
     fs.project = project
     fs.user = user
     fs.offline_dataset = offline_dataset

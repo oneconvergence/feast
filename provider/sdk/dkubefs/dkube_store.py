@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 import pytz
 from feast import RepoConfig
 from feast.entity import Entity
-from feast.feature_table import FeatureTable
 from feast.feature_view import FeatureView
 from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
@@ -13,7 +12,6 @@ from feast.protos.feast.types.Value_pb2 import Value as ValueProto
 from feast.repo_config import FeastConfigBaseModel
 from mysql.connector import connect
 from provider.sdk.dkubefs.utils import get_dkube_db_config
-from pydantic import StrictStr
 from pydantic.typing import Literal
 
 
@@ -36,7 +34,7 @@ class DkubeOnlineStore(OnlineStore):
     def online_write_batch(
         self,
         config: RepoConfig,
-        table: Union[FeatureTable, FeatureView],
+        table: FeatureView,
         data: List[
             Tuple[
                 EntityKeyProto,
@@ -120,7 +118,7 @@ class DkubeOnlineStore(OnlineStore):
     def online_read(
         self,
         config: RepoConfig,
-        table: Union[FeatureTable, FeatureView],
+        table: FeatureView,
         entity_keys: List[EntityKeyProto],
         requested_features: List[str] = None,
         user: Optional[str] = None,
@@ -154,8 +152,8 @@ class DkubeOnlineStore(OnlineStore):
     def update(
         self,
         config: RepoConfig,
-        tables_to_delete: Sequence[Union[FeatureTable, FeatureView]],
-        tables_to_keep: Sequence[Union[FeatureTable, FeatureView]],
+        tables_to_delete: Sequence[FeatureView],
+        tables_to_keep: Sequence[FeatureView],
         entities_to_delete: Sequence[Entity],
         entities_to_keep: Sequence[Entity],
         partial: bool,
@@ -193,7 +191,7 @@ class DkubeOnlineStore(OnlineStore):
     def teardown(
         self,
         config: RepoConfig,
-        tables: Sequence[Union[FeatureTable, FeatureView]],
+        tables: Sequence[FeatureView],
         entities: Sequence[Entity],
     ):
         # teardown_infra should remove all deployed infrastructure

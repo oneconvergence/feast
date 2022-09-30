@@ -1,12 +1,15 @@
 import json
 import sys
 from pathlib import Path
-from typing import List, Optional
-
+from typing import Any, Dict, Optional
+from fastapi import Depends, Request
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jinja2
 import yaml
 
+
 USERS = {}
+token_auth_scheme = HTTPBearer()
 
 
 def get_repo_path() -> str:
@@ -63,25 +66,56 @@ def get_user_info(user: str) -> dict:
     return user_info
 
 
+def get_user_info_by_project(project: str) -> dict:
+    global USERS
+    for user, user_val in USERS.items():
+        if user_val["project"] == project:
+            return {
+                "user": user,
+                **USERS[user]
+            }
+    return {}
+
+
 def del_user_info(user: str):
     global USERS
     if user in USERS:
         del USERS[user]
 
 
-def list_user_info() -> List[dict]:
+def list_user_info() -> Dict[str, Dict[Any, Any]]:
     global USERS
     return USERS
 
 
 def set_env(project, user, offline_dataset):
-    # os.environ[project] = f"{user}_{offline_dataset}"
     pass
 
 
 def unset_env(project):
-    # os.environ.pop(project, None)
     pass
+
+
+async def extract_info(
+    request: Request,
+    token: HTTPAuthorizationCredentials = Depends(token_auth_scheme),
+):
+    try:
+        req_json = await request.json()
+    except json.decoder.JSONDecodeError:
+        req_json = {}
+    user = req_json.get("user")
+    offline_dataset = req_json.get("offline_dataset")
+    project = req_json.get("project")
+    user_token = token.credentials
+    if user:
+        add_user_info(
+            user, {
+                "offline_dataset": offline_dataset,
+                "token": user_token,
+                "project": project
+            }
+        )
 
 
 if __name__ == "__main__":
