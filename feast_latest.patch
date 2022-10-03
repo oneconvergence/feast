@@ -781,7 +781,7 @@ index f72fd717..0e74ed74 100644
 +                    )
 +                )
 diff --git a/sdk/python/feast/repo_operations.py b/sdk/python/feast/repo_operations.py
-index 9a5e64f8..67c265ab 100644
+index 9a5e64f8..48b428c2 100644
 --- a/sdk/python/feast/repo_operations.py
 +++ b/sdk/python/feast/repo_operations.py
 @@ -10,6 +10,7 @@ from pathlib import Path
@@ -792,7 +792,7 @@ index 9a5e64f8..67c265ab 100644
  from click.exceptions import BadParameter
  
  from feast import PushSource
-@@ -22,7 +23,12 @@ from feast.feature_store import FeatureStore
+@@ -22,12 +23,18 @@ from feast.feature_store import FeatureStore
  from feast.feature_view import DUMMY_ENTITY, FeatureView
  from feast.names import adjectives, animals
  from feast.on_demand_feature_view import OnDemandFeatureView
@@ -806,7 +806,13 @@ index 9a5e64f8..67c265ab 100644
  from feast.repo_config import RepoConfig
  from feast.repo_contents import RepoContents
  from feast.request_feature_view import RequestFeatureView
-@@ -336,7 +342,7 @@ def cli_check_repo(repo_path: Path):
+ from feast.stream_feature_view import StreamFeatureView
+ from feast.usage import log_exceptions_and_usage
++from dkube.sdk import DkubeApi
+ 
+ 
+ def py_path_to_module(path: Path) -> str:
+@@ -336,7 +343,7 @@ def cli_check_repo(repo_path: Path):
  
  
  @log_exceptions_and_usage
@@ -815,22 +821,44 @@ index 9a5e64f8..67c265ab 100644
      import os
      from distutils.dir_util import copy_tree
      from pathlib import Path
-@@ -348,6 +354,8 @@ def init_repo(repo_name: str, template: str):
+@@ -348,6 +355,8 @@ def init_repo(repo_name: str, template: str):
              message="Name should be alphanumeric values and underscores but not start with an underscore",
              param_hint="PROJECT_DIRECTORY",
          )
 +    if git_url:
-+        create_dkube_project(repo_name, git_url)
++        process_dkube_project(repo_name, git_url)
      repo_path = Path(os.path.join(Path.cwd(), repo_name))
      repo_path.mkdir(exist_ok=True)
      repo_config_path = repo_path / "feature_store.yaml"
-@@ -417,3 +425,34 @@ def replace_str_in_file(file_path, match_str, sub_str):
+@@ -417,3 +426,56 @@ def replace_str_in_file(file_path, match_str, sub_str):
  def generate_project_name() -> str:
      """Generates a unique project name"""
      return f"{random.choice(adjectives)}_{random.choice(animals)}"
 +
 +
-+def create_dkube_project(repo_name: str, git_url: str):
++def verify_dkube_project(project):
++    dkube_url = os.getenv("DKUBE_URL")
++    if not dkube_url:
++        sys.exit("DKUBE_URL not set.")
++
++    dkube_token = os.getenv("DKUBE_USER_ACCESS_TOKEN")
++    if not dkube_token:
++        sys.exit("DKUBE_USER_ACCESS_TOKEN not set.")
++
++    dkube_api = DkubeApi(URL=dkube_url, token=dkube_token)
++    project_id = dkube_api.get_project_id(project)
++    if not project_id:
++        sys.exit("Please create Dkube project first.")
++    project_data = dkube_api.get_project(project_id)
++    project_data["feastEnabled"] = True
++    try:
++        dkube_api.update_project(project_id, project_data)
++    except AssertionError as ae:
++        print("Error updating Dkube project ", ae)
++        sys.exit(1)
++
++
++def process_dkube_project(repo_name: str, git_url: str):
 +    repo_path = Path(os.path.join(Path.cwd(), repo_name))
 +    if repo_path.exists():
 +        from colorama import Fore, Style
