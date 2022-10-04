@@ -781,7 +781,7 @@ index f72fd717..0e74ed74 100644
 +                    )
 +                )
 diff --git a/sdk/python/feast/repo_operations.py b/sdk/python/feast/repo_operations.py
-index 9a5e64f8..48b428c2 100644
+index 9a5e64f8..1d06240f 100644
 --- a/sdk/python/feast/repo_operations.py
 +++ b/sdk/python/feast/repo_operations.py
 @@ -10,6 +10,7 @@ from pathlib import Path
@@ -808,7 +808,7 @@ index 9a5e64f8..48b428c2 100644
  from feast.request_feature_view import RequestFeatureView
  from feast.stream_feature_view import StreamFeatureView
  from feast.usage import log_exceptions_and_usage
-+from dkube.sdk import DkubeApi
++from dkube.sdk import *
  
  
  def py_path_to_module(path: Path) -> str:
@@ -830,7 +830,7 @@ index 9a5e64f8..48b428c2 100644
      repo_path = Path(os.path.join(Path.cwd(), repo_name))
      repo_path.mkdir(exist_ok=True)
      repo_config_path = repo_path / "feature_store.yaml"
-@@ -417,3 +426,56 @@ def replace_str_in_file(file_path, match_str, sub_str):
+@@ -417,3 +426,58 @@ def replace_str_in_file(file_path, match_str, sub_str):
  def generate_project_name() -> str:
      """Generates a unique project name"""
      return f"{random.choice(adjectives)}_{random.choice(animals)}"
@@ -850,15 +850,17 @@ index 9a5e64f8..48b428c2 100644
 +    if not project_id:
 +        sys.exit("Please create Dkube project first.")
 +    project_data = dkube_api.get_project(project_id)
-+    project_data["feastEnabled"] = True
++    project_data["feast_enabled"] = True
++    new_project = DkubeProject(**project_data)
 +    try:
-+        dkube_api.update_project(project_id, project_data)
++        dkube_api.update_project(project_id, new_project)
 +    except AssertionError as ae:
-+        print("Error updating Dkube project ", ae)
++        print("Error updating Dkube project")
 +        sys.exit(1)
 +
 +
 +def process_dkube_project(repo_name: str, git_url: str):
++    verify_dkube_project(repo_name)
 +    repo_path = Path(os.path.join(Path.cwd(), repo_name))
 +    if repo_path.exists():
 +        from colorama import Fore, Style

@@ -1,7 +1,12 @@
 FROM ubuntu:20.04
 
+USER root
+WORKDIR /root
+
 ARG PYTHON_VERSION_TAG=3.9.10
 ARG LINK_PYTHON_TO_PYTHON3=1
+
+SHELL [ "/bin/bash", "-c" ]
 
 RUN apt-get -qq -y update && \
     DEBIAN_FRONTEND=noninteractive apt-get -qq -y install \
@@ -17,6 +22,7 @@ RUN apt-get -qq -y update && \
         libgdbm-compat-dev \
         liblzma-dev \
         libreadline-dev \
+        libnss3-dev \
         uuid-dev \
         libffi-dev \
         tk-dev \
@@ -34,20 +40,24 @@ RUN apt-get -qq -y update && \
     apt-get -y autoremove && \
     rm -rf /var/lib/apt/lists/*
 
-COPY install_python.sh install_python.sh
+COPY dockerfiles/install_python.sh install_python.sh
 RUN bash install_python.sh ${PYTHON_VERSION_TAG} ${LINK_PYTHON_TO_PYTHON3} && \
     rm -r install_python.sh Python-${PYTHON_VERSION_TAG}
-
 
 RUN cd /opt \
     && git clone https://github.com/oneconvergence/feast.git \
     && cd feast \
     && git checkout -t origin/feast_changes \
-    && cd feast \
     && git submodule init \
     && git submodule update \
-    && patch -p1 < ../feast.patch \
-    && make install-python
+    && pip install -r feast_requirements.txt \
+    && pip install -r requirements.txt \
+    && cd feast \
+    && patch -p1 < ../feast_latest.patch \
+    && python setup.py install \
+    && cd /opt/feast \
+    && bash dockerfiles/copy_dkube_template.sh
+    #&& make install-python
 
 ENV PYTHONPATH "${PYTHONPATH}:/opt/feast/:/opt/feast/provider/sdk"
 
@@ -86,7 +96,7 @@ RUN jupyter notebook --generate-config
 RUN git config --global user.email "dkube@oneconvergence.com"
 RUN git config --global user.name "dkube"
 ENV DKUBE_NB_ARGS ""
-ADD notebook_startup.sh /
+ADD dockerfiles/notebook_startup.sh /
 RUN chmod +x /notebook_startup.sh
 CMD ["/notebook_startup.sh"]
 
