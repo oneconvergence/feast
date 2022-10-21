@@ -1,0 +1,113 @@
+diff --git a/ui/src/FeastUISansProviders.tsx b/ui/src/FeastUISansProviders.tsx
+index 628068f0..5ba5f8c5 100644
+--- a/ui/src/FeastUISansProviders.tsx
++++ b/ui/src/FeastUISansProviders.tsx
+@@ -39,15 +39,34 @@ interface FeastUIConfigs {
+   projectListPromise?: Promise<any>;
+ }
+ 
+-const defaultProjectListPromise = () => {
+-  return fetch("/projects-list.json", {
+-    headers: {
+-      "Content-Type": "application/json",
+-    },
+-  }).then((res) => {
+-    return res.json();
+-  });
+-};
++const defaultProjectListPromise = async () => {
++  const res = await fetch(
++    "/dkube/v2/controller/projects",
++    {
++      headers: {
++        "Content-Type": "application/json",
++        authorization:
++          "Bearer " + localStorage.getItem("token"),
++      },
++    }
++  )
++  let projects: any = []
++  const allProjects = await res.json();
++  allProjects &&
++    allProjects.data &&
++    allProjects.data.forEach((d: any) => {
++      if (d.feastEnabled) {
++        projects.push({
++          name: d.name,
++          description: d.description,
++          id: d.name,
++          registryPath: `/api/v1/registry/${d.name}`,
++        })
++      };
++    });
++
++  return { projects: projects };
++}
+ 
+ const FeastUISansProviders = ({
+   feastUIConfigs,
+diff --git a/ui/src/pages/Layout.tsx b/ui/src/pages/Layout.tsx
+index ff56414f..ac9d553d 100644
+--- a/ui/src/pages/Layout.tsx
++++ b/ui/src/pages/Layout.tsx
+@@ -35,7 +35,7 @@ const Layout = () => {
+   return (
+     <RegistryPathContext.Provider value={registryPath}>
+       <EuiPage paddingSize="none" style={{ background: "transparent" }}>
+-        <EuiPageSideBar
++        {/* <EuiPageSideBar
+           paddingSize="l"
+           sticky
+           role={"navigation"}
+@@ -50,7 +50,7 @@ const Layout = () => {
+               <Sidebar />
+             </React.Fragment>
+           )}
+-        </EuiPageSideBar>
++        </EuiPageSideBar> */}
+ 
+         <EuiPageBody panelled>
+           <EuiErrorBoundary>
+diff --git a/ui/src/pages/entities/EntityOverviewTab.tsx b/ui/src/pages/entities/EntityOverviewTab.tsx
+index dc649c2a..3ec8e423 100644
+--- a/ui/src/pages/entities/EntityOverviewTab.tsx
++++ b/ui/src/pages/entities/EntityOverviewTab.tsx
+@@ -72,7 +72,7 @@ const EntityOverviewTab = () => {
+                   <EuiDescriptionListTitle>Created</EuiDescriptionListTitle>
+                   <EuiDescriptionListDescription>
+                     {data.meta.createdTimestamp ? (
+-                      data.meta.createdTimestamp.toLocaleDateString("en-CA")
++                      new Date(data.meta.createdTimestamp).toLocaleDateString("en-CA")
+                     ) : (
+                       <EuiText>No createdTimestamp specified on this entity.</EuiText>
+                     )}
+@@ -81,7 +81,7 @@ const EntityOverviewTab = () => {
+                   <EuiDescriptionListTitle>Updated</EuiDescriptionListTitle>
+                   <EuiDescriptionListDescription>
+                     {data.meta.lastUpdatedTimestamp ? (
+-                      data.meta.lastUpdatedTimestamp.toLocaleDateString("en-CA")
++                      new Date(data.meta.lastUpdatedTimestamp).toLocaleDateString("en-CA")
+                     ) : (
+                       <EuiText>No lastUpdatedTimestamp specified on this entity.</EuiText>
+                     )}
+diff --git a/ui/src/queries/useLoadRegistry.ts b/ui/src/queries/useLoadRegistry.ts
+index ffb06756..2503babf 100644
+--- a/ui/src/queries/useLoadRegistry.ts
++++ b/ui/src/queries/useLoadRegistry.ts
+@@ -26,13 +26,15 @@ const useLoadRegistry = (url: string) => {
+       return fetch(url, {
+         headers: {
+           "Content-Type": "application/json",
++          authorization:
++          "Bearer " +localStorage.getItem("token"),
+         },
+       })
+         .then((res) => {
+           return res.json();
+         })
+         .then<FeatureStoreAllData>((json) => {
+-          const objects = FeastRegistrySchema.parse(json);
++          const objects = json; //FeastRegistrySchema.parse(json);
+ 
+           const { mergedFVMap, mergedFVList } = mergedFVTypes(objects);
+ 
